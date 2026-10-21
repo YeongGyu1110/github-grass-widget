@@ -35,6 +35,20 @@ data class ContributionData(
         return streak
     }
 
+    /** 기간 안에서 가장 길게 이어진 연속 기여 일수 */
+    fun longestStreak(): Int {
+        var best = 0
+        var run = 0
+        var prev: LocalDate? = null
+        for (day in days) {
+            run = if (day.count > 0 && prev != null && day.date == prev.plusDays(1) && run > 0) run + 1
+            else if (day.count > 0) 1 else 0
+            best = maxOf(best, run)
+            prev = day.date
+        }
+        return best
+    }
+
     fun toJson(): String = JSONObject().apply {
         put("username", username)
         put("total", total)

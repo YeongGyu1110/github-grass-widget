@@ -56,10 +56,20 @@ class Store(context: Context) {
         return data.takeIf { it.username.equals(settings().username, ignoreCase = true) }
     }
 
-    fun saveData(data: ContributionData) {
+    /** etag: 이 데이터를 받은 HTML 응답의 ETag (다음 요청에서 바뀌었는지 확인하는 데 씀) */
+    fun saveData(data: ContributionData, etag: String?) {
         cacheFile.writeText(data.toJson())
-        lastError = null
+        prefs.edit {
+            putString("lastError", null)
+            putString("etag", etag)
+            putString("etagUser", data.username)
+        }
     }
+
+    /** 캐시와 짝이 맞는 ETag. 사용자가 바뀌었으면 null */
+    fun etagFor(username: String): String? =
+        prefs.getString("etag", null)
+            ?.takeIf { prefs.getString("etagUser", null).equals(username, ignoreCase = true) }
 
     var lastError: String?
         get() = prefs.getString("lastError", null)

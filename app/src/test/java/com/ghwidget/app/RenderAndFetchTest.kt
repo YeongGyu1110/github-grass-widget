@@ -28,8 +28,13 @@ class RenderAndFetchTest {
 
     @Test
     fun fetchParseAndRender() {
-        val data = GitHubClient.fetch("torvalds", null)
+        val first = GitHubClient.fetch("torvalds", null) as GitHubClient.Result.Fetched
+        val data = first.data
         assertTrue("days=${data.days.size}", data.days.size >= 365)
+
+        // 같은 ETag 로 다시 요청하면 본문 없이 304 (NotModified)
+        assertTrue("etag 없음", first.etag != null)
+        assertEquals(GitHubClient.Result.NotModified, GitHubClient.fetch("torvalds", null, first.etag))
         assertTrue(data.total > 0)
         assertTrue(data.days.any { it.level > 0 && it.count > 0 })
         println("days=${data.days.size} total=${data.total} first=${data.days.first().date} last=${data.lastDate} streak=${data.currentStreak()}")

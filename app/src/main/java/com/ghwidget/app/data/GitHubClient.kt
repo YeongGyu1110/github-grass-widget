@@ -14,48 +14,111 @@ import java.time.LocalDate
  */
 object GitHubClient {
 
-    class FetchException(message: String) : IOException(message)
+    /** retryable: 잠시 뒤 다시 시도하면 나아질 수 있는 오류인지 (요청 제한, 서버 오류) */
+    class FetchException(message: String, val retryable: Boolean = false) : IOException(message)
 
-    fun fetch(username: String, token: String?): ContributionData =
-        if (token.isNullOrBlank()) fetchFromHtml(username) else fetchFromGraphQl(username, token.trim())
+    sealed interface Result {
+        /** 마지막으로 받은 뒤 바뀐 것이 없음 (HTTP 304) */
+        data object NotModified : Result
+        data class Fetched(val data: ContributionData, val etag: String?) : Result
+    }
+
+    /** etag: 지난번 HTML 응답의 ETag. 넘기면 바뀐 것이 없을 때 본문 없이 NotModified 를 돌려준다 */
+    fun fetch(username: String, token: String?, etag: String? = null): Result =
+        if (token.isNullOrBlank()) fetchFromHtml(username, etag)
+        else Result.Fetched(fetchFromGraphQl(username, token.trim()), null)
 
     // ---------------------------------------------------------------- HTML
 
-    private val tdRegex = Regex("""<td\b[^>]*\bContributionCalendar-day\b[^>]*>""")
-    private val attrRegex = Regex("""([\w-]+)="([^"]*)"""")
-    private val tooltipRegex = Regex("""<tool-tip\b[^>]*\bfor="([^"]+)"[^>]*>([^<]*)</tool-tip>""")
-    private val countRegex = Regex("""^\s*([\d,]+)\s+contribution""")
-    private val totalRegex =
-        Regex("""id="js-contribution-activity-description"[^>]*>\s*([\d,]+)\s+contribution""")
-
-    private fun fetchFromHtml(username: String): ContributionData {
+    private fun fetchFromHtml(username: String, etag: String?): Result {
         val user = URLEncoder.encode(username, "UTF-8")
-        val html = request("https://github.com/users/$user/contributions", headers = mapOf(
-            "Accept" to "text/html",
-        ))
+        val res = request(
+            "https://github.com/users/$user/contributions",
+            headers = buildMap {
+                put("Accept", "text/html")
+                if (etag != null) put("If-None-Match", etag)
+            },
+        )
+        if (res.notModified) return Result.NotModified
+        return Result.Fetched(parseHtml(username, res.body), res.etag)
+    }
 
-        val counts = HashMap<String, Int>()
-        tooltipRegex.findAll(html).forEach { m ->
-            val text = m.groupValues[2]
-            counts[m.groupValues[1]] = countRegex.find(text)?.groupValues?.get(1)
-                ?.replace(",", "")?.toIntOrNull() ?: 0
+    /**
+     * 정규식 대신 indexOf 로 한 번만 훑는다 (23만 자 HTML 기준, 정규식은 기기에서 1초 이상 걸렸다).
+     *
+     * 날짜 칸:  <td ... data-date="2025-10-19" id="contribution-day-component-0-0" data-level="1" ... class="ContributionCalendar-day">
+     * 툴팁:     <tool-tip ... for="contribution-day-component-0-0" ...>4 contributions on October 19th.</tool-tip>
+     */
+    internal fun parseHtml(username: String, html: String): ContributionData {
+        val counts = HashMap<String, Int>(512)
+        var i = 0
+        while (true) {
+            val start = html.indexOf("<tool-tip ", i)
+            if (start < 0) break
+            val tagEnd = html.indexOf('>', start)
+            val close = if (tagEnd < 0) -1 else html.indexOf("</tool-tip>", tagEnd)
+            if (close < 0) break
+            attr(html.substring(start, tagEnd), "for")?.let { counts[it] = leadingCount(html, tagEnd + 1, close) }
+            i = close
         }
 
-        val days = tdRegex.findAll(html).mapNotNull { m ->
-            val attrs = attrRegex.findAll(m.value).associate { it.groupValues[1] to it.groupValues[2] }
-            val date = attrs["data-date"]?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-                ?: return@mapNotNull null
-            val level = attrs["data-level"]?.toIntOrNull() ?: 0
+        val days = ArrayList<ContributionDay>(371)
+        i = 0
+        while (true) {
+            val start = html.indexOf("<td ", i)
+            if (start < 0) break
+            val end = html.indexOf('>', start)
+            if (end < 0) break
+            i = end
+            val tag = html.substring(start, end)
+            if (!tag.contains("ContributionCalendar-day")) continue
+            val date = attr(tag, "data-date")?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: continue
+            val level = (attr(tag, "data-level")?.toIntOrNull() ?: 0).coerceIn(0, 4)
             // 툴팁이 없으면 레벨만이라도 살린다 (레벨>0 이면 최소 1)
-            val count = attrs["id"]?.let { counts[it] } ?: if (level > 0) 1 else 0
-            ContributionDay(date, count, level.coerceIn(0, 4))
-        }.sortedBy { it.date }.toList()
-
+            val count = attr(tag, "id")?.let { counts[it] } ?: if (level > 0) 1 else 0
+            days += ContributionDay(date, count, level)
+        }
         if (days.isEmpty()) throw FetchException("contributions 를 찾을 수 없습니다 (사용자 이름 확인)")
+        days.sortBy { it.date }
 
-        val total = totalRegex.find(html)?.groupValues?.get(1)?.replace(",", "")?.toIntOrNull()
+        val total = html.indexOf("id=\"js-contribution-activity-description\"")
+            .takeIf { it >= 0 }
+            ?.let { html.indexOf('>', it) }
+            ?.takeIf { it >= 0 }
+            ?.let { leadingCount(html, it + 1, minOf(html.length, it + 200)) }
+            ?.takeIf { it > 0 }
             ?: days.sumOf { it.count }
         return ContributionData(username, days, total, System.currentTimeMillis())
+    }
+
+    /** 태그 문자열에서 ` name="값"` 의 값을 꺼낸다 */
+    private fun attr(tag: String, name: String): String? {
+        val key = " $name=\""
+        val s = tag.indexOf(key)
+        if (s < 0) return null
+        val v = s + key.length
+        val e = tag.indexOf('"', v)
+        return if (e < 0) null else tag.substring(v, e)
+    }
+
+    /** html[from, until) 이 "  1,234 contribution..." 로 시작하면 1234, 아니면 0 ("No contributions" 등) */
+    private fun leadingCount(html: String, from: Int, until: Int): Int {
+        var p = from
+        while (p < until && html[p].isWhitespace()) p++
+        var n = 0
+        var digits = 0
+        while (p < until) {
+            val c = html[p]
+            when {
+                c in '0'..'9' -> { n = n * 10 + (c - '0'); digits++ }
+                c == ',' -> {}
+                else -> break
+            }
+            p++
+        }
+        if (digits == 0) return 0
+        while (p < until && html[p].isWhitespace()) p++
+        return if (html.startsWith("contribution", p)) n else 0
     }
 
     // ------------------------------------------------------------- GraphQL
@@ -87,7 +150,7 @@ object GitHubClient {
                 "Content-Type" to "application/json",
                 "Accept" to "application/json",
             ),
-        ))
+        ).body)
 
         res.optJSONArray("errors")?.let { errs ->
             throw FetchException(errs.optJSONObject(0)?.optString("message") ?: "GraphQL 오류")
@@ -121,12 +184,14 @@ object GitHubClient {
 
     // --------------------------------------------------------------- HTTP
 
+    private class Response(val body: String, val etag: String?, val notModified: Boolean)
+
     private fun request(
         url: String,
         method: String = "GET",
         body: String? = null,
         headers: Map<String, String> = emptyMap(),
-    ): String {
+    ): Response {
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
             conn.requestMethod = method
@@ -139,15 +204,18 @@ object GitHubClient {
                 conn.outputStream.use { it.write(body.toByteArray()) }
             }
             val code = conn.responseCode
+            if (code == HttpURLConnection.HTTP_NOT_MODIFIED) return Response("", null, notModified = true)
             if (code !in 200..299) {
-                throw FetchException(when (code) {
-                    401 -> "토큰이 올바르지 않습니다 (HTTP 401)"
-                    404 -> "사용자를 찾을 수 없습니다 (HTTP 404)"
-                    429, 403 -> "요청이 제한되었습니다. 잠시 후 다시 시도하세요 (HTTP $code)"
-                    else -> "HTTP $code"
-                })
+                throw when (code) {
+                    401 -> FetchException("토큰이 올바르지 않습니다 (HTTP 401)")
+                    404 -> FetchException("사용자를 찾을 수 없습니다 (HTTP 404)")
+                    429, 403 -> FetchException("요청이 제한되었습니다. 잠시 후 다시 시도하세요 (HTTP $code)", retryable = true)
+                    in 500..599 -> FetchException("GitHub 서버 오류 (HTTP $code)", retryable = true)
+                    else -> FetchException("HTTP $code")
+                }
             }
-            return conn.inputStream.bufferedReader().use { it.readText() }
+            val text = conn.inputStream.bufferedReader().use { it.readText() }
+            return Response(text, conn.getHeaderField("ETag"), notModified = false)
         } finally {
             conn.disconnect()
         }

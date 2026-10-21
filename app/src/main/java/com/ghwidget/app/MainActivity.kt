@@ -123,7 +123,7 @@ private fun SettingsScreen() {
         settings = new
         store.save(new)
         WidgetUpdater.updateAll(ctx)
-        if (intervalChanged) Refresh.ensurePeriodic(ctx, replace = true)
+        if (intervalChanged) Refresh.ensurePeriodic(ctx)
     }
 
     fun saveAndRefresh() {

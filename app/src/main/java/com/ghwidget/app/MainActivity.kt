@@ -9,6 +9,7 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -25,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.ghwidget.app.data.GitHubAuth
@@ -46,6 +48,25 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen().setOnExitAnimationListener { splash ->
+            // 로고 애니메이션이 아직 진행 중이면 끝까지(최대 0.3초) 보여준 뒤 부드럽게 사라진다
+            val remaining = (splash.iconAnimationStartMillis + splash.iconAnimationDurationMillis - SystemClock.uptimeMillis())
+                .coerceIn(0L, 300L)
+            // Android 12+ 에서는 로고가 배경과 다른 레이어에 그려져서 따로 함께 사라지게 해야 한다
+            splash.iconView.animate()
+                .alpha(0f)
+                .scaleX(0.85f)
+                .scaleY(0.85f)
+                .setStartDelay(remaining)
+                .setDuration(200L)
+                .start()
+            splash.view.animate()
+                .alpha(0f)
+                .setStartDelay(remaining)
+                .setDuration(220L)
+                .withEndAction { splash.remove() }
+                .start()
+        }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent { MainRoute(this) }

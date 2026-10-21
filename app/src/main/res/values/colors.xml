@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 앱 화면 배경 (ui/theme/AppTheme.kt 의 background 와 같은 값). 스플래시·창 배경에 사용 -->
+    <color name="app_background">#F2F4F7</color>
+    <!-- 스플래시 로고의 잔디 칸 1~4 단계 (위젯 라이트 팔레트) -->
+    <color name="splash_cell_1">#9BE9A8</color>
+    <color name="splash_cell_2">#40C463</color>
+    <color name="splash_cell_3">#30A14E</color>
+    <color name="splash_cell_4">#216E39</color>
+</resources>

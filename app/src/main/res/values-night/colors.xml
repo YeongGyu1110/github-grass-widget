@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="app_background">#0B0B0E</color>
+    <!-- 위젯 다크 팔레트 -->
+    <color name="splash_cell_1">#0E4429</color>
+    <color name="splash_cell_2">#006D32</color>
+    <color name="splash_cell_3">#26A641</color>
+    <color name="splash_cell_4">#39D353</color>
+</resources>

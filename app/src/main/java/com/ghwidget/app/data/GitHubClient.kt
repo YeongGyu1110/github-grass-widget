@@ -21,6 +21,7 @@ object GitHubClient {
         query {
           viewer {
             login
+            avatarUrl(size: 160)
             contributionsCollection {
               contributionCalendar {
                 totalContributions
@@ -31,7 +32,10 @@ object GitHubClient {
         }
     """
 
-    fun fetchViewer(token: String): ContributionData {
+    /** avatarUrl: 프로필 이미지 주소 (사진을 바꾸면 주소도 바뀐다) */
+    data class Viewer(val data: ContributionData, val avatarUrl: String?)
+
+    fun fetchViewer(token: String): Viewer {
         val res = Http.post(
             "https://api.github.com/graphql",
             JSONObject().put("query", QUERY).toString(),
@@ -51,7 +55,7 @@ object GitHubClient {
         return parseViewer(res.body)
     }
 
-    internal fun parseViewer(json: String): ContributionData {
+    internal fun parseViewer(json: String): Viewer {
         val res = JSONObject(json)
         res.optJSONArray("errors")?.let { errs ->
             throw FetchException(errs.optJSONObject(0)?.optString("message") ?: "GraphQL 오류")
@@ -80,11 +84,12 @@ object GitHubClient {
             }
         }
         days.sortBy { it.date }
-        return ContributionData(
+        val data = ContributionData(
             username = viewer.getString("login"),
             days = days,
             total = cal.getInt("totalContributions"),
             fetchedAt = System.currentTimeMillis(),
         )
+        return Viewer(data, viewer.optString("avatarUrl").takeIf { it.startsWith("https://") })
     }
 }

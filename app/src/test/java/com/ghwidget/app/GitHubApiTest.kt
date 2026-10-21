@@ -41,7 +41,7 @@ class GitHubApiTest {
     @Test
     fun parsesViewerCalendar() {
         val json = """
-            {"data":{"viewer":{"login":"octocat","contributionsCollection":{"contributionCalendar":{
+            {"data":{"viewer":{"login":"octocat","avatarUrl":"https://avatars.githubusercontent.com/u/583231?s=160&v=4","contributionsCollection":{"contributionCalendar":{
               "totalContributions":7,
               "weeks":[
                 {"contributionDays":[
@@ -51,7 +51,9 @@ class GitHubApiTest {
                   {"date":"2026-01-11","contributionCount":2,"contributionLevel":"SECOND_QUARTILE"}]}
               ]}}}}}
         """.trimIndent()
-        val data = GitHubClient.parseViewer(json)
+        val viewer = GitHubClient.parseViewer(json)
+        assertEquals("https://avatars.githubusercontent.com/u/583231?s=160&v=4", viewer.avatarUrl)
+        val data = viewer.data
         assertEquals("octocat", data.username)
         assertEquals(7, data.total)
         assertEquals(
@@ -74,9 +76,19 @@ class GitHubApiTest {
     fun liveFetchWithToken() {
         val token = System.getenv("GITHUB_TOKEN")
         assumeTrue("GITHUB_TOKEN 없음 - 건너뜀", !token.isNullOrBlank())
-        val data = GitHubClient.fetchViewer(token!!)
+        val data = GitHubClient.fetchViewer(token!!).data
         assertTrue(data.days.size >= 365)
         println("login=${data.username} days=${data.days.size} total=${data.total}")
+    }
+
+    /** 공개 프로필 이미지를 실제로 받아 PNG/JPEG 인지 확인 */
+    @Test
+    fun downloadsAvatarImage() {
+        val bytes = com.ghwidget.app.data.Http.getBytes("https://avatars.githubusercontent.com/u/583231?s=160&v=4")
+        val png = bytes.size > 4 && bytes[0] == 0x89.toByte() && bytes[1] == 'P'.code.toByte()
+        val jpeg = bytes.size > 3 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte()
+        assertTrue("이미지 형식이 아님 (${bytes.size}B)", png || jpeg)
+        println("avatar bytes=${bytes.size} ${if (png) "png" else "jpeg"}")
     }
 
     /** 실제 Client ID 로 로그인 코드를 받을 수 있는지 (OAuth App 에 Device Flow 가 켜져 있는지) */

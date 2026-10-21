@@ -18,8 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * shadcn/ui 의 "zinc" 테마를 옮긴 색 토큰.
- * 회색 계열 + 1px 테두리 중심이고, 색은 상태 표시(성공·오류)와 잔디 초록에만 쓴다.
+ * shadcn/ui 스타일의 색 토큰.
+ * 순수 회색(zinc) 대신 푸른 회색(slate)을 아주 살짝 섞어 덜 딱딱하게 하고,
+ * 눈부심을 줄이려고 완전한 흰색·검정은 쓰지 않는다 (라이트: 미색 바탕, 다크: 아주 옅게 푸른 검정).
+ * 색은 상태 표시(성공·오류)와 잔디 초록에만 쓴다.
  */
 @Immutable
 data class AppColors(
@@ -39,34 +41,35 @@ data class AppColors(
 )
 
 private val Light = AppColors(
-    background = Color(0xFFFAFAFA),       // zinc-50
-    foreground = Color(0xFF09090B),       // zinc-950
-    card = Color(0xFFFFFFFF),
-    border = Color(0xFFE4E4E7),           // zinc-200
-    muted = Color(0xFFF4F4F5),            // zinc-100
-    mutedForeground = Color(0xFF71717A),  // zinc-500
-    primary = Color(0xFF18181B),          // zinc-900
-    primaryForeground = Color(0xFFFAFAFA),
-    accent = Color(0xFFF4F4F5),
-    destructive = Color(0xFFDC2626),      // red-600
-    destructiveMuted = Color(0xFFFEF2F2), // red-50
-    success = Color(0xFF16A34A),          // green-600
+    background = Color(0xFFF2F4F7),       // 살짝 푸른 미색
+    foreground = Color(0xFF1C232C),       // 완전한 검정 대신 짙은 슬레이트
+    card = Color(0xFFFAFBFC),             // 순백 대신 아주 옅은 회백색
+    border = Color(0xFFDDE2E8),
+    muted = Color(0xFFEAEEF2),
+    mutedForeground = Color(0xFF5F6A77),
+    primary = Color(0xFF232B35),
+    primaryForeground = Color(0xFFF7F9FB),
+    accent = Color(0xFFEAEEF2),
+    destructive = Color(0xFFCF3A3A),
+    destructiveMuted = Color(0xFFFBEDED),
+    success = Color(0xFF1F9D55),
     isDark = false,
 )
 
+// 다크: zinc 원래 값에서 슬레이트 차콜 쪽으로 15%만 옮긴 색 (너무 밝아지지 않게)
 private val Dark = AppColors(
-    background = Color(0xFF09090B),       // zinc-950
-    foreground = Color(0xFFFAFAFA),
-    card = Color(0xFF111113),
-    border = Color(0xFF27272A),           // zinc-800
-    muted = Color(0xFF1F1F23),
-    mutedForeground = Color(0xFFA1A1AA),  // zinc-400
-    primary = Color(0xFFFAFAFA),
-    primaryForeground = Color(0xFF18181B),
-    accent = Color(0xFF27272A),
-    destructive = Color(0xFFF87171),      // red-400
-    destructiveMuted = Color(0xFF2A1215),
-    success = Color(0xFF4ADE80),          // green-400
+    background = Color(0xFF0B0B0E),
+    foreground = Color(0xFFF6F7F8),
+    card = Color(0xFF121316),
+    border = Color(0xFF28292D),
+    muted = Color(0xFF1F2025),
+    mutedForeground = Color(0xFF9EA0A9),
+    primary = Color(0xFFF6F7F8),
+    primaryForeground = Color(0xFF17181B),
+    accent = Color(0xFF28292D),
+    destructive = Color(0xFFF77272),
+    destructiveMuted = Color(0xFF2A1417),
+    success = Color(0xFF4DDB80),
     isDark = true,
 )
 

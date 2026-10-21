@@ -13,6 +13,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.ghwidget.app.data.ContributionData
 import com.ghwidget.app.data.GitHubClient
+import com.ghwidget.app.data.Http
 import com.ghwidget.app.data.Store
 import com.ghwidget.app.widget.WidgetUpdater
 import kotlinx.coroutines.Dispatchers
@@ -35,8 +36,14 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         store.lastAttemptAt = System.currentTimeMillis()
         val cached = store.cachedData()
         return try {
-            val data = GitHubClient.fetchViewer(token)
+            val viewer = GitHubClient.fetchViewer(token)
+            val data = viewer.data
             store.saveData(data)
+            // 프로필 이미지는 주소가 바뀌었을 때만(=사진을 바꿨을 때만) 받는다. 실패해도 동기화는 성공으로 둔다
+            val avatarUrl = viewer.avatarUrl
+            if (avatarUrl != null && store.needsAvatar(avatarUrl)) {
+                runCatching { store.saveAvatar(avatarUrl, Http.getBytes(avatarUrl)) }
+            }
             // 그래프 내용이 같으면 다시 그리지 않는다 (런처로 비트맵을 보내는 비용 절약)
             if (cached == null || cached.days != data.days || cached.total != data.total) {
                 WidgetUpdater.updateAll(applicationContext)

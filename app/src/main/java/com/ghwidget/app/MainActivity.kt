@@ -6,9 +6,11 @@ import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -20,12 +22,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.ghwidget.app.data.GitHubAuth
 import com.ghwidget.app.data.Settings
 import com.ghwidget.app.data.Store
+import com.ghwidget.app.data.ThemeMode
 import com.ghwidget.app.ui.Account
 import com.ghwidget.app.ui.HomeActions
 import com.ghwidget.app.ui.MainScreen
@@ -43,13 +48,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContent { AppTheme { MainRoute() } }
+        setContent { MainRoute(this) }
     }
 }
 
-/** 저장소·WorkManager·로그인 상태를 들고 HomeScreen 에 넘겨준다 */
+/** 저장소·WorkManager·로그인 상태를 들고 MainScreen 에 넘겨준다 */
 @Composable
-private fun MainRoute() {
+private fun MainRoute(activity: ComponentActivity) {
     val ctx = LocalContext.current
     val store = remember { Store(ctx) }
     val scope = rememberCoroutineScope()
@@ -66,6 +71,7 @@ private fun MainRoute() {
     var pending by remember { mutableStateOf(store.pendingLogin) }
     var requestingCode by remember { mutableStateOf(false) }
     var loginError by remember { mutableStateOf<String?>(null) }
+    var avatar by remember { mutableStateOf(loadAvatar(store)) }
 
     val workInfos by remember { WorkManager.getInstance(ctx).getWorkInfosForUniqueWorkFlow(Refresh.NOW) }
         .collectAsState(initial = emptyList())
@@ -77,6 +83,7 @@ private fun MainRoute() {
             error = store.lastError
             login = store.login
             signedIn = store.accessToken != null
+            avatar = loadAvatar(store)
         }
     }
 
@@ -87,11 +94,12 @@ private fun MainRoute() {
 
     val actions = HomeActions(
         onSettingsChange = { new: Settings ->
-            val intervalChanged = new.refreshHours != settings.refreshHours
+            val old = settings
             settings = new
             store.save(new)
-            WidgetUpdater.updateAll(ctx)
-            if (intervalChanged) Refresh.ensurePeriodic(ctx)
+            // 앱 테마·새로고침 간격만 바뀐 경우에는 위젯을 다시 그리지 않는다
+            if (new.copy(appTheme = old.appTheme, refreshHours = old.refreshHours) != old) WidgetUpdater.updateAll(ctx)
+            if (new.refreshHours != old.refreshHours) Refresh.ensurePeriodic(ctx)
         },
         onLogin = {
             scope.launch {
@@ -117,6 +125,7 @@ private fun MainRoute() {
             login = null
             data = null
             error = null
+            avatar = null
             WidgetUpdater.updateAll(ctx)
         },
         onRefresh = { Refresh.now(ctx) },
@@ -171,27 +180,48 @@ private fun MainRoute() {
         if (signedIn && data == null && !refreshing) Refresh.now(ctx)
     }
 
+    // 앱 테마: 설정이 '시스템'이면 휴대폰 설정을 따른다
+    val systemDark = isSystemInDarkTheme()
+    val appDark = when (settings.appTheme) {
+        ThemeMode.SYSTEM -> systemDark
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    // 상태 표시줄·내비게이션 바 아이콘 색도 앱 테마에 맞춘다
+    LaunchedEffect(appDark) {
+        val transparent = android.graphics.Color.TRANSPARENT
+        val style = if (appDark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
+        activity.enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+    }
+
     val currentPending = pending
-    MainScreen(
-        state = HomeState(
-            settings = settings,
-            account = when {
-                signedIn -> Account.SignedIn(login)
-                currentPending != null -> Account.Pending(currentPending)
-                else -> Account.SignedOut
-            },
-            data = data,
-            error = error,
-            refreshing = refreshing,
-            requestingCode = requestingCode,
-            loginError = loginError,
-            canPinWidget = widgetManager.isRequestPinAppWidgetSupported,
-            versionName = versionName,
-            systemDark = isSystemInDarkTheme(),
-        ),
-        actions = actions,
-    )
+    AppTheme(darkTheme = appDark) {
+        MainScreen(
+            state = HomeState(
+                settings = settings,
+                account = when {
+                    signedIn -> Account.SignedIn(login)
+                    currentPending != null -> Account.Pending(currentPending)
+                    else -> Account.SignedOut
+                },
+                data = data,
+                error = error,
+                refreshing = refreshing,
+                requestingCode = requestingCode,
+                loginError = loginError,
+                canPinWidget = widgetManager.isRequestPinAppWidgetSupported,
+                versionName = versionName,
+                systemDark = systemDark,
+                avatar = avatar,
+            ),
+            actions = actions,
+        )
+    }
 }
+
+private fun loadAvatar(store: Store): ImageBitmap? =
+    store.avatarFile.takeIf { it.exists() }
+        ?.let { runCatching { BitmapFactory.decodeFile(it.path)?.asImageBitmap() }.getOrNull() }
 
 private fun openGitHubWithCode(ctx: Context, code: GitHubAuth.DeviceCode) {
     ctx.getSystemService(ClipboardManager::class.java)

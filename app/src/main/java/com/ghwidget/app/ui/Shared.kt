@@ -27,7 +27,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -68,14 +70,18 @@ fun LogoMark(size: Dp = 40.dp) {
     }
 }
 
-/** 계정 이름 첫 글자 원형 아바타 */
+/** GitHub 프로필 이미지. 아직 없으면 계정 이름 첫 글자 */
 @Composable
-fun Avatar(login: String?, size: Dp = 40.dp) {
+fun Avatar(login: String?, image: ImageBitmap? = null, size: Dp = 40.dp) {
     val c = AppTheme.colors
     Box(
         Modifier.size(size).clip(CircleShape).background(c.muted).border(1.dp, c.border, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
+        if (image != null) {
+            Image(image, contentDescription = "프로필 이미지", contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize().clip(CircleShape))
+            return@Box
+        }
         Text(
             login?.firstOrNull()?.uppercase() ?: "?",
             style = MaterialTheme.typography.titleMedium.copy(fontSize = (size.value * 0.4f).sp),
@@ -114,7 +120,7 @@ fun WidgetStage(
     val bmp = remember(settings, data, message, dark, density, size) {
         GraphRenderer.render(size.widthDp, size.heightDp, density, dark, settings, data, message).asImageBitmap()
     }
-    val wallpaper = if (c.isDark) listOf(Color(0xFF1C1C21), Color(0xFF2A2A31)) else listOf(Color(0xFFE6E6EA), Color(0xFFF6F6F7))
+    val wallpaper = if (c.isDark) listOf(Color(0xFF1C1D23), Color(0xFF2A2B33)) else listOf(Color(0xFFE1E6EC), Color(0xFFF1F4F7))
     Column(
         Modifier
             .fillMaxWidth()

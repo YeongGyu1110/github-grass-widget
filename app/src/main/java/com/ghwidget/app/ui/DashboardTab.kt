@@ -33,7 +33,6 @@ import com.ghwidget.app.ui.charts.MonthlyBars
 import com.ghwidget.app.ui.charts.WeekdayBars
 import com.ghwidget.app.ui.components.Alert
 import com.ghwidget.app.ui.components.AppCard
-import com.ghwidget.app.ui.components.AppIconButton
 import com.ghwidget.app.ui.components.AppIcons
 import com.ghwidget.app.ui.components.CardHeader
 import com.ghwidget.app.ui.components.IconTile
@@ -56,7 +55,7 @@ fun DashboardTab(state: HomeState, actions: HomeActions) {
         TabPage {
             // 프로필 헤더
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                Avatar(account?.login, size = 44.dp)
+                Avatar(account?.login, state.avatar, size = 44.dp)
                 Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         account?.login?.let { "@$it" } ?: "계정 확인 중…",
@@ -66,14 +65,13 @@ fun DashboardTab(state: HomeState, actions: HomeActions) {
                     Text(
                         when {
                             state.refreshing -> "동기화 중…"
-                            state.data != null -> "마지막 동기화 ${relativeTime(state.data.fetchedAt)}"
+                            state.data != null -> "마지막 동기화 ${relativeTime(state.data.fetchedAt)} · 당겨서 새로고침"
                             else -> "아직 데이터가 없습니다"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = AppTheme.colors.mutedForeground,
                     )
                 }
-                AppIconButton(AppIcons.Refresh, "새로고침", actions.onRefresh, loading = state.refreshing)
             }
 
             if (state.error != null) Alert("동기화하지 못했습니다", state.error)

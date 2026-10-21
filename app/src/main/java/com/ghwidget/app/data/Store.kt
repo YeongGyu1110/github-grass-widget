@@ -19,6 +19,8 @@ data class Settings(
     val showHeader: Boolean = true,
     val showMonths: Boolean = true,
     val refreshHours: Int = 3,
+    /** 이 앱 화면의 테마 (위젯 테마와 별개) */
+    val appTheme: ThemeMode = ThemeMode.SYSTEM,
 )
 
 /** 설정·로그인 정보(SharedPreferences) + 마지막으로 받아온 데이터 캐시(파일) */
@@ -41,6 +43,7 @@ class Store(context: Context) {
         showHeader = prefs.getBoolean("showHeader", true),
         showMonths = prefs.getBoolean("showMonths", true),
         refreshHours = prefs.getInt("refreshHours", 3),
+        appTheme = enumOr(prefs.getString("appTheme", null), ThemeMode.SYSTEM),
     )
 
     fun save(s: Settings) = prefs.edit {
@@ -50,6 +53,7 @@ class Store(context: Context) {
         putBoolean("showHeader", s.showHeader)
         putBoolean("showMonths", s.showMonths)
         putInt("refreshHours", s.refreshHours)
+        putString("appTheme", s.appTheme.name)
     }
 
     // ------------------------------------------------------------ 로그인
@@ -67,8 +71,31 @@ class Store(context: Context) {
         get() = prefs.getString("pendingLogin", null)?.let { runCatching { GitHubAuth.DeviceCode.fromJson(it) }.getOrNull() }
         set(v) = prefs.edit { putString("pendingLogin", v?.toJson()) }
 
+    // ------------------------------------------------------------ 프로필 이미지
+
+    /** 받아 둔 프로필 이미지 파일 (없을 수 있음) */
+    val avatarFile: File get() = File(app.filesDir, "avatar")
+
+    /** 지금 저장된 프로필 이미지를 받은 주소. 주소가 바뀌었을 때만 다시 받는다 */
+    var avatarUrl: String?
+        get() = prefs.getString("avatarUrl", null)
+        set(v) = prefs.edit { putString("avatarUrl", v) }
+
+    fun needsAvatar(url: String): Boolean = url != avatarUrl || !avatarFile.exists()
+
+    fun saveAvatar(url: String, bytes: ByteArray) {
+        avatarFile.writeBytes(bytes)
+        avatarUrl = url
+    }
+
+    private fun clearAvatar() {
+        avatarFile.delete()
+        prefs.edit { remove("avatarUrl") }
+    }
+
     fun signIn(token: String) {
         cacheFile.delete()
+        clearAvatar()
         prefs.edit {
             putString("accessToken", token)
             remove("login")
@@ -79,6 +106,7 @@ class Store(context: Context) {
 
     fun signOut() {
         cacheFile.delete()
+        clearAvatar()
         prefs.edit {
             remove("accessToken")
             remove("login")

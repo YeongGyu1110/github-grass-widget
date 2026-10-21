@@ -1,5 +1,6 @@
 package com.ghwidget.app.ui
 
+import androidx.compose.ui.graphics.ImageBitmap
 import com.ghwidget.app.data.ContributionData
 import com.ghwidget.app.data.GitHubAuth
 import com.ghwidget.app.data.Settings
@@ -26,6 +27,8 @@ data class HomeState(
     val versionName: String = "",
     /** 미리보기에서 '시스템' 테마를 어느 쪽으로 그릴지 */
     val systemDark: Boolean = false,
+    /** GitHub 프로필 이미지 (받기 전이면 null → 이니셜 표시) */
+    val avatar: ImageBitmap? = null,
 )
 
 class HomeActions(

@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.ghwidget.app.data.ThemeMode
 import com.ghwidget.app.ui.components.AppButton
 import com.ghwidget.app.ui.components.AppCard
 import com.ghwidget.app.ui.components.AppDivider
@@ -44,11 +45,23 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
         // 프로필
         AppCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Avatar(login, size = 48.dp)
+                Avatar(login, state.avatar, size = 48.dp)
                 Column(Modifier.weight(1f).padding(start = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(login?.let { "@$it" } ?: "계정 확인 중…", style = MaterialTheme.typography.titleMedium, color = c.foreground)
                     StatusBadge("GitHub 연결됨", BadgeTone.Success)
                 }
+            }
+        }
+
+        ListGroup("화면", footer = "이 앱의 테마입니다. 홈 화면 위젯의 테마는 위젯 탭에서 따로 정합니다.") {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("앱 테마", style = MaterialTheme.typography.titleSmall, color = c.foreground)
+                val themes = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK)
+                SegmentedControl(
+                    listOf("시스템", "라이트", "다크"),
+                    themes.indexOf(state.settings.appTheme),
+                    { actions.onSettingsChange(state.settings.copy(appTheme = themes[it])) },
+                )
             }
         }
 

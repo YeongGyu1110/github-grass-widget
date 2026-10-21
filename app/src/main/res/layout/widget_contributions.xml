@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  위젯 전체(배경/헤더/그래프)는 비트맵으로 그려서 ImageView에 넣는다.
+  라이트/다크 비트맵을 둘 다 넣어두고, layout-night 변형에서 보이는 쪽만 바꿔서
+  시스템 테마가 바뀌어도 앱이 다시 그리지 않아도 런처가 알맞은 쪽을 보여주게 한다.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/img_light"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/widget_label"
+        android:scaleType="fitCenter" />
+
+    <ImageView
+        android:id="@+id/img_dark"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/widget_label"
+        android:scaleType="fitCenter"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <View
+            android:id="@+id/click_header"
+            android:layout_width="match_parent"
+            android:layout_height="34dp" />
+
+        <View
+            android:id="@+id/click_graph"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+</FrameLayout>

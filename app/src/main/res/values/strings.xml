@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">GitHub 잔디</string>
+    <string name="widget_label">GitHub 잔디</string>
+    <string name="widget_description">GitHub contributions 그래프를 홈 화면에 표시합니다</string>
+</resources>

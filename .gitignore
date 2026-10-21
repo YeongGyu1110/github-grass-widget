@@ -1,0 +1,26 @@
+﻿# Gradle / Kotlin
+.gradle/
+.kotlin/
+build/
+
+# 로컬 환경 (SDK 경로 등)
+/local.properties
+
+# IDE
+.idea/
+*.iml
+
+# Android
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+
+# 서명 키
+*.jks
+*.keystore
+
+# OS
+.DS_Store
+Thumbs.db

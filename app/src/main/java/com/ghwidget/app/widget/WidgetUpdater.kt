@@ -26,7 +26,7 @@ object WidgetUpdater {
         val settings = store.settings()
         val data = store.cachedData()
         val message = when {
-            settings.username.isBlank() -> "앱을 열어 GitHub 사용자 이름을 입력하세요"
+            store.accessToken == null -> store.lastError ?: "앱을 열어 GitHub에 로그인하세요"
             data == null -> store.lastError ?: "불러오는 중…"
             else -> null
         }
@@ -48,7 +48,11 @@ object WidgetUpdater {
             setImageViewBitmap(R.id.img_light, light)
             setImageViewBitmap(R.id.img_dark, dark)
             setOnClickPendingIntent(R.id.click_header, openAppIntent(context))
-            setOnClickPendingIntent(R.id.click_graph, refreshIntent(context))
+            // 로그아웃 상태면 그래프를 눌러도 새로고침 대신 로그인 화면(앱)을 연다
+            setOnClickPendingIntent(
+                R.id.click_graph,
+                if (store.accessToken == null) openAppIntent(context) else refreshIntent(context),
+            )
             setViewVisibility(R.id.click_header, if (settings.showHeader) View.VISIBLE else View.GONE)
         }
         manager.updateAppWidget(widgetId, views)

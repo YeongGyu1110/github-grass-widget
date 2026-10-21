@@ -33,7 +33,7 @@ class ContributionWidgetProvider : AppWidgetProvider() {
         // 데이터가 오래됐으면 바로 갱신. (WorkManager 가 컴포넌트를 켜고 끌 때도 onUpdate 가 불리므로
         // 실패가 반복될 때 무한 재시도되지 않도록 마지막 시도 시각으로 제한)
         val store = Store(context)
-        if (store.settings().username.isBlank()) return
+        if (store.accessToken == null) return
         val data = store.cachedData()
         val now = System.currentTimeMillis()
         val stale = data == null || now - data.fetchedAt > STALE_MS

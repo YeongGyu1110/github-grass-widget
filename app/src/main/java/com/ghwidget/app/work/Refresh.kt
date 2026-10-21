@@ -11,6 +11,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.ghwidget.app.data.ContributionData
 import com.ghwidget.app.data.GitHubClient
 import com.ghwidget.app.data.Store
 import com.ghwidget.app.widget.WidgetUpdater
@@ -25,8 +26,8 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
     private fun work(): Result {
         val store = Store(applicationContext)
-        val s = store.settings()
-        if (s.username.isBlank()) {
+        val token = store.accessToken
+        if (token == null) {
             WidgetUpdater.updateAll(applicationContext)
             return Result.success()
         }
@@ -34,28 +35,34 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         store.lastAttemptAt = System.currentTimeMillis()
         val cached = store.cachedData()
         return try {
-            val etag = if (cached != null) store.etagFor(s.username) else null
-            when (val r = GitHubClient.fetch(s.username, s.token, etag)) {
-                // 바뀐 것이 없으면 받은 시각만 갱신하고 위젯은 그대로 둔다
-                GitHubClient.Result.NotModified ->
-                    store.saveData(cached!!.copy(fetchedAt = System.currentTimeMillis()), etag)
-                is GitHubClient.Result.Fetched -> {
-                    store.saveData(r.data, r.etag)
-                    // 그래프 내용이 같으면 다시 그리지 않는다 (런처로 비트맵을 보내는 비용 절약)
-                    if (cached == null || cached.days != r.data.days || cached.total != r.data.total) {
-                        WidgetUpdater.updateAll(applicationContext)
-                    }
-                }
+            val data = GitHubClient.fetchViewer(token)
+            store.saveData(data)
+            // 그래프 내용이 같으면 다시 그리지 않는다 (런처로 비트맵을 보내는 비용 절약)
+            if (cached == null || cached.days != data.days || cached.total != data.total) {
+                WidgetUpdater.updateAll(applicationContext)
             }
             Result.success()
+        } catch (e: GitHubClient.FetchException) {
+            if (e.unauthorized) {
+                // 토큰이 취소·만료됨: 로그아웃 처리하고 위젯에 다시 로그인하라고 표시
+                store.signOut()
+                store.lastError = e.message
+                WidgetUpdater.updateAll(applicationContext)
+                Result.success()
+            } else {
+                failure(store, cached, e, retryable = e.retryable)
+            }
         } catch (e: Exception) {
-            store.lastError = e.message ?: e.javaClass.simpleName
-            // 캐시가 있으면 위젯은 이전 그래프를 그대로 보여주므로 다시 그릴 필요 없음
-            if (cached == null) WidgetUpdater.updateAll(applicationContext)
-            // 네트워크 문제·요청 제한·서버 오류만 재시도 (잘못된 사용자 이름 등은 재시도해도 같음)
-            val retryable = e !is GitHubClient.FetchException || e.retryable
-            if (retryable && runAttemptCount < 2) Result.retry() else Result.success()
+            // 네트워크 연결 문제 등
+            failure(store, cached, e, retryable = true)
         }
+    }
+
+    private fun failure(store: Store, cached: ContributionData?, e: Exception, retryable: Boolean): Result {
+        store.lastError = e.message ?: e.javaClass.simpleName
+        // 캐시가 있으면 위젯은 이전 그래프를 그대로 보여주므로 다시 그릴 필요 없음
+        if (cached == null) WidgetUpdater.updateAll(applicationContext)
+        return if (retryable && runAttemptCount < 2) Result.retry() else Result.success()
     }
 }
 

@@ -76,8 +76,8 @@ object GraphRenderer {
 
         val text = TextPaint(Paint.ANTI_ALIAS_FLAG)
 
-        if (settings.showHeader && settings.username.isNotBlank()) {
-            drawHeader(canvas, text, pal, d, left, right, top, settings.username, data)
+        if (settings.showHeader && data != null) {
+            drawHeader(canvas, text, pal, d, left, right, top, data.username, data)
             top += (HEADER_H + HEADER_GAP) * d
         }
 

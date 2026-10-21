@@ -2,48 +2,46 @@ package com.ghwidget.app
 
 import android.graphics.Bitmap
 import com.ghwidget.app.data.ContributionData
-import com.ghwidget.app.data.GitHubClient
+import com.ghwidget.app.data.ContributionDay
 import com.ghwidget.app.data.PaletteId
 import com.ghwidget.app.data.Settings
 import com.ghwidget.app.widget.GraphRenderer
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import java.time.LocalDate
+import kotlin.random.Random
 
-/**
- * 실제 GitHub 에서 데이터를 받아(네트워크 필요) 파싱을 확인하고,
- * 여러 위젯 크기/테마로 렌더링해 app/build/render-test 에 PNG 로 저장한다.
- */
+/** 여러 위젯 크기/테마로 렌더링해 app/build/render-test 에 PNG 로 저장한다 (눈으로 확인용) */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class RenderAndFetchTest {
+class RenderTest {
 
     private val outDir = File("build/render-test").apply { mkdirs() }
 
+    /** 1년치 가짜 데이터 (항상 같은 결과가 나오도록 고정 시드) */
+    private fun sampleData(): ContributionData {
+        val rnd = Random(42)
+        val today = LocalDate.now()
+        val days = (0L until 371L).map { i ->
+            val level = (rnd.nextInt(9) - 4).coerceIn(0, 4)
+            ContributionDay(today.minusDays(370 - i), if (level == 0) 0 else level * 3 + rnd.nextInt(3), level)
+        }
+        return ContributionData("octocat", days, days.sumOf { it.count }, System.currentTimeMillis())
+    }
+
     @Test
-    fun fetchParseAndRender() {
-        val first = GitHubClient.fetch("torvalds", null) as GitHubClient.Result.Fetched
-        val data = first.data
-        assertTrue("days=${data.days.size}", data.days.size >= 365)
-
-        // 같은 ETag 로 다시 요청하면 본문 없이 304 (NotModified)
-        assertTrue("etag 없음", first.etag != null)
-        assertEquals(GitHubClient.Result.NotModified, GitHubClient.fetch("torvalds", null, first.etag))
-        assertTrue(data.total > 0)
-        assertTrue(data.days.any { it.level > 0 && it.count > 0 })
-        println("days=${data.days.size} total=${data.total} first=${data.days.first().date} last=${data.lastDate} streak=${data.currentStreak()}")
-
+    fun renderVariants() {
+        val data = sampleData()
         // JSON 캐시 왕복
-        val back = ContributionData.fromJson(data.toJson())
-        assertEquals(data.days, back.days)
+        assertEquals(data.days, ContributionData.fromJson(data.toJson()).days)
 
-        val base = Settings(username = "torvalds")
+        val base = Settings()
         save("4x2_light", GraphRenderer.render(330f, 150f, 2.75f, false, base, data, null))
         save("4x2_dark", GraphRenderer.render(330f, 150f, 2.75f, true, base, data, null))
         save("4x1_dark_noheader", GraphRenderer.render(330f, 70f, 2.75f, true,
@@ -52,7 +50,7 @@ class RenderAndFetchTest {
         save("5x3_purple", GraphRenderer.render(420f, 230f, 2.75f, true,
             base.copy(palette = PaletteId.PURPLE, bgOpacity = 60), data, null))
         save("message", GraphRenderer.render(330f, 150f, 2.75f, false,
-            base.copy(username = ""), null, "앱을 열어 GitHub 사용자 이름을 입력하세요"))
+            base, null, "앱을 열어 GitHub에 로그인하세요"))
     }
 
     private fun save(name: String, bmp: Bitmap) {

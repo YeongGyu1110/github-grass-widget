@@ -64,7 +64,7 @@ class HomeScreenshotTest {
         data = null,
         error = null,
         refreshing = false,
-        versionName = "v1.7.0",
+        versionName = "v1.7.1",
     )
 
     @Test fun signedInLight() = shoot("signed_in_light", false,

@@ -20,7 +20,7 @@ class ContributionWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == ACTION_REFRESH) {
             Toast.makeText(context, "GitHub 잔디 새로고침 중…", Toast.LENGTH_SHORT).show()
-            Refresh.now(context)
+            Refresh.now(context, "위젯 그래프 누름")
             return
         }
         super.onReceive(context, intent)
@@ -37,7 +37,7 @@ class ContributionWidgetProvider : AppWidgetProvider() {
         val data = store.cachedData()
         val now = System.currentTimeMillis()
         val stale = data == null || now - data.fetchedAt > STALE_MS
-        if (stale && now - store.lastAttemptAt > AUTO_RETRY_MS) Refresh.now(context)
+        if (stale && now - store.lastAttemptAt > AUTO_RETRY_MS) Refresh.now(context, "위젯 갱신 요청(데이터 오래됨)")
     }
 
     override fun onAppWidgetOptionsChanged(

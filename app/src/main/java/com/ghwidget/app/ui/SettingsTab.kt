@@ -1,5 +1,7 @@
 package com.ghwidget.app.ui
 
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,15 +12,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ghwidget.app.data.ThemeMode
 import com.ghwidget.app.ui.components.AppButton
 import com.ghwidget.app.ui.components.AppCard
 import com.ghwidget.app.ui.components.AppDivider
+import com.ghwidget.app.ui.components.AppIconButton
 import com.ghwidget.app.ui.components.AppIcons
 import com.ghwidget.app.ui.components.BadgeTone
 import com.ghwidget.app.ui.components.ButtonVariant
@@ -38,6 +45,12 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
     val c = AppTheme.colors
     val login = (state.account as? Account.SignedIn)?.login
     var confirmSignOut by rememberSaveable { mutableStateOf(false) }
+    var showDiagnostics by rememberSaveable { mutableStateOf(false) }
+
+    if (showDiagnostics) {
+        DiagnosticsPage(actions) { showDiagnostics = false }
+        return
+    }
 
     TabPage {
         PageHeader("설정")
@@ -110,6 +123,14 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
             ListRow("버전", icon = AppIcons.Info, value = state.versionName.ifEmpty { "-" })
             AppDivider()
             ListRow(
+                "진단 기록",
+                icon = AppIcons.Activity,
+                description = "동기화·로그인·네트워크 기록 (문제 원인 확인용)",
+                showChevron = true,
+                onClick = { showDiagnostics = true },
+            )
+            AppDivider()
+            ListRow(
                 "소스 코드",
                 icon = AppIcons.Github,
                 description = "YeongGyu1110/github-grass-widget",
@@ -139,5 +160,62 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
                 AppButton("취소", { confirmSignOut = false }, variant = ButtonVariant.Outline)
             },
         )
+    }
+}
+
+/** 진단 기록: 동기화·로그인·토큰 갱신·네트워크 오류 기록 (최신순) */
+@Composable
+private fun DiagnosticsPage(actions: HomeActions, onBack: () -> Unit) {
+    val c = AppTheme.colors
+    val context = LocalContext.current
+    var lines by remember { mutableStateOf(actions.loadDiagnostics()) }
+    BackHandler(onBack = onBack)
+
+    TabPage {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+            AppIconButton(AppIcons.ChevronLeft, "뒤로", onBack)
+            Column(Modifier.padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("진단 기록", style = MaterialTheme.typography.headlineSmall, color = c.foreground)
+                Text("최근 ${lines.size}건 · 최신순", style = MaterialTheme.typography.bodySmall, color = c.mutedForeground)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppButton(
+                "복사",
+                {
+                    actions.onCopyDiagnostics(lines.reversed().joinToString("\n"))
+                    Toast.makeText(context, "진단 기록을 복사했습니다", Toast.LENGTH_SHORT).show()
+                },
+                variant = ButtonVariant.Outline,
+                icon = AppIcons.Copy,
+                enabled = lines.isNotEmpty(),
+                modifier = Modifier.weight(1f),
+            )
+            AppButton(
+                "지우기",
+                { actions.onClearDiagnostics(); lines = emptyList() },
+                variant = ButtonVariant.Outline,
+                destructive = true,
+                enabled = lines.isNotEmpty(),
+                modifier = Modifier.weight(1f),
+            )
+        }
+        AppCard {
+            if (lines.isEmpty()) {
+                Text("아직 기록이 없습니다", style = MaterialTheme.typography.bodySmall, color = c.mutedForeground)
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    lines.forEach { line ->
+                        Text(
+                            line,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp,
+                            color = if (line.contains("실패") || line.contains("로그아웃") || line.contains("401")) c.destructive else c.foreground,
+                        )
+                    }
+                }
+            }
+        }
     }
 }

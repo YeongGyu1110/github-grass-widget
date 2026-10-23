@@ -61,6 +61,33 @@ class Store(context: Context) {
     /** GitHub OAuth 액세스 토큰. null 이면 로그아웃 상태 */
     val accessToken: String? get() = prefs.getString("accessToken", null)
 
+    /** access token 갱신용 토큰 (짧은 수명 토큰을 쓰는 OAuth App 일 때만 있음) */
+    val refreshToken: String? get() = prefs.getString("refreshToken", null)
+
+    /** access token 만료 시각 (epoch ms). 0 이면 만료 없음/모름 */
+    val accessExpiresAt: Long get() = prefs.getLong("accessExpiresAt", 0L)
+
+    /** refresh token 만료 시각 (epoch ms). 0 이면 모름 */
+    val refreshExpiresAt: Long get() = prefs.getLong("refreshExpiresAt", 0L)
+
+    /** 자동으로 로그아웃된 이유 (로그인 화면에 보여준다). 다시 로그인하면 지워짐 */
+    var signOutNotice: String?
+        get() = prefs.getString("signOutNotice", null)
+        set(v) = prefs.edit(commit = true) { putString("signOutNotice", v) }
+
+    /**
+     * 갱신한 토큰 묶음 저장. refresh token 은 한 번 쓰면 무효가 되므로
+     * 저장이 날아가면 다시 로그인해야 한다 → 디스크에 바로 쓴다(commit).
+     */
+    fun saveTokens(t: GitHubAuth.TokenSet) = prefs.edit(commit = true) { putTokens(t) }
+
+    private fun android.content.SharedPreferences.Editor.putTokens(t: GitHubAuth.TokenSet) {
+        putString("accessToken", t.accessToken)
+        putString("refreshToken", t.refreshToken)
+        putLong("accessExpiresAt", t.accessExpiresAt ?: 0L)
+        putLong("refreshExpiresAt", t.refreshExpiresAt ?: 0L)
+    }
+
     /** 로그인한 GitHub 계정 이름. 로그인 직후 첫 데이터를 받기 전에는 null */
     var login: String?
         get() = prefs.getString("login", null)
@@ -93,22 +120,28 @@ class Store(context: Context) {
         prefs.edit { remove("avatarUrl") }
     }
 
-    fun signIn(token: String) {
+    fun signIn(tokens: GitHubAuth.TokenSet) {
         cacheFile.delete()
         clearAvatar()
-        prefs.edit {
-            putString("accessToken", token)
+        prefs.edit(commit = true) {
+            putTokens(tokens)
+            remove("signOutNotice")
             remove("login")
             remove("pendingLogin")
             remove("lastError")
         }
     }
 
-    fun signOut() {
+    /** notice: 자동 로그아웃일 때 로그인 화면에 보여줄 이유 (사용자가 직접 로그아웃하면 null) */
+    fun signOut(notice: String? = null) {
         cacheFile.delete()
         clearAvatar()
-        prefs.edit {
+        prefs.edit(commit = true) {
             remove("accessToken")
+            remove("refreshToken")
+            remove("accessExpiresAt")
+            remove("refreshExpiresAt")
+            putString("signOutNotice", notice)
             remove("login")
             remove("pendingLogin")
             remove("lastError")

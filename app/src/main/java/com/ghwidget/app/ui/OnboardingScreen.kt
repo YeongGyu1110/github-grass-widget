@@ -86,6 +86,7 @@ fun OnboardingScreen(state: HomeState, actions: HomeActions) {
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                state.signOutNotice?.let { Alert("다시 로그인이 필요해요", it) }
                 when (val account = state.account) {
                     is Account.Pending -> LoginCodePanel(account, actions)
                     else -> {

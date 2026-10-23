@@ -26,7 +26,8 @@ object WidgetUpdater {
         val settings = store.settings()
         val data = store.cachedData()
         val message = when {
-            store.accessToken == null -> store.lastError ?: "앱을 열어 GitHub에 로그인하세요"
+            store.accessToken == null -> store.signOutNotice?.let { "다시 로그인이 필요합니다. 앱을 열어 주세요." }
+                ?: "앱을 열어 GitHub에 로그인하세요"
             data == null -> store.lastError ?: "불러오는 중…"
             else -> null
         }

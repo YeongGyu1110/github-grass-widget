@@ -20,7 +20,11 @@ class GitHubApiTest {
 
     @Test
     fun pollResponses() {
-        assertEquals(Poll.Success("gho_abc"), GitHubAuth.parsePoll("""{"access_token":"gho_abc","token_type":"bearer","scope":""}""", 5))
+        // 오래된 방식(만료 없는 토큰)
+        assertEquals(
+            Poll.Success(GitHubAuth.TokenSet("gho_abc", null, null, null)),
+            GitHubAuth.parsePoll("""{"access_token":"gho_abc","token_type":"bearer","scope":""}""", 5),
+        )
         assertEquals(Poll.Pending, GitHubAuth.parsePoll("""{"error":"authorization_pending"}""", 5))
         assertEquals(Poll.SlowDown(10), GitHubAuth.parsePoll("""{"error":"slow_down","interval":10}""", 5))
         assertEquals(Poll.SlowDown(10), GitHubAuth.parsePoll("""{"error":"slow_down"}""", 5))

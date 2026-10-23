@@ -39,8 +39,22 @@ object GitHubAuth {
         }
     }
 
+    /**
+     * 로그인으로 받은 토큰 묶음.
+     * 2026-08 부터 새 OAuth App 은 기본으로 "짧은 수명 토큰"을 써서 access token 이 8시간 뒤 만료되고,
+     * refresh token(6개월)으로 새 묶음을 받아야 한다. 오래된 방식이면 refreshToken·만료 시각이 null.
+     */
+    data class TokenSet(
+        val accessToken: String,
+        val refreshToken: String?,
+        /** access token 만료 시각 (epoch ms), 만료 없음이면 null */
+        val accessExpiresAt: Long?,
+        /** refresh token 만료 시각 (epoch ms) */
+        val refreshExpiresAt: Long?,
+    )
+
     sealed interface Poll {
-        data class Success(val token: String) : Poll
+        data class Success(val tokens: TokenSet) : Poll
         /** 아직 사용자가 승인하지 않음 */
         data object Pending : Poll
         /** 너무 자주 물어봄: 간격을 늘려야 함 */
@@ -73,7 +87,7 @@ object GitHubAuth {
 
     internal fun parsePoll(json: String, currentInterval: Int): Poll {
         val o = JSONObject(json)
-        o.optString("access_token").takeIf { it.isNotEmpty() }?.let { return Poll.Success(it) }
+        parseTokens(o)?.let { return Poll.Success(it) }
         return when (o.optString("error")) {
             "authorization_pending" -> Poll.Pending
             "slow_down" -> Poll.SlowDown(o.optInt("interval", currentInterval + 5))
@@ -81,6 +95,49 @@ object GitHubAuth {
             "access_denied" -> Poll.Failed("GitHub에서 로그인을 거부했습니다.")
             else -> Poll.Failed(describeError(o))
         }
+    }
+
+    /** 토큰 응답에서 토큰 묶음을 꺼낸다. access_token 이 없으면 null */
+    internal fun parseTokens(o: JSONObject, now: Long = System.currentTimeMillis()): TokenSet? {
+        val access = o.optString("access_token").takeIf { it.isNotEmpty() } ?: return null
+        fun expiry(key: String) = o.optLong(key, 0L).takeIf { it > 0 }?.let { now + it * 1000 }
+        return TokenSet(
+            accessToken = access,
+            refreshToken = o.optString("refresh_token").takeIf { it.isNotEmpty() },
+            accessExpiresAt = expiry("expires_in"),
+            refreshExpiresAt = expiry("refresh_token_expires_in"),
+        )
+    }
+
+    sealed interface Refresh {
+        data class Refreshed(val tokens: TokenSet) : Refresh
+        /** refresh token 도 만료·취소됨: 다시 로그인해야 함 */
+        data class Invalid(val message: String) : Refresh
+    }
+
+    /**
+     * refresh token 으로 새 토큰 묶음을 받는다. Device Flow 로 받은 토큰은 Client Secret 없이 갱신된다.
+     * 한 번 쓴 refresh token 과 이전 access token 은 더 이상 쓸 수 없다 (새 묶음을 꼭 저장해야 함).
+     * 네트워크 오류는 IOException 으로 던진다.
+     */
+    fun refresh(refreshToken: String): Refresh = parseRefresh(
+        postForm(
+            "https://github.com/login/oauth/access_token",
+            "client_id" to CLIENT_ID,
+            "grant_type" to "refresh_token",
+            "refresh_token" to refreshToken,
+        ),
+    )
+
+    internal fun parseRefresh(json: String): Refresh {
+        val o = JSONObject(json)
+        parseTokens(o)?.let { return Refresh.Refreshed(it) }
+        return Refresh.Invalid(
+            when (o.optString("error")) {
+                "bad_refresh_token" -> "로그인 갱신 기한이 지났습니다. 다시 로그인해 주세요."
+                else -> describeError(o)
+            },
+        )
     }
 
     private fun describeError(o: JSONObject): String = when (o.optString("error")) {

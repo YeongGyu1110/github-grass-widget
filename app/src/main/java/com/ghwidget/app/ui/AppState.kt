@@ -29,6 +29,8 @@ data class HomeState(
     val systemDark: Boolean = false,
     /** GitHub 프로필 이미지 (받기 전이면 null → 이니셜 표시) */
     val avatar: ImageBitmap? = null,
+    /** 자동으로 로그아웃된 이유 (로그인 화면에 보여줌) */
+    val signOutNotice: String? = null,
 )
 
 class HomeActions(
@@ -40,6 +42,10 @@ class HomeActions(
     val onRefresh: () -> Unit = {},
     val onPinWidget: () -> Unit = {},
     val onOpenUrl: (String) -> Unit = {},
+    /** 진단 기록 (최근 것이 먼저) */
+    val loadDiagnostics: () -> List<String> = { emptyList() },
+    val onClearDiagnostics: () -> Unit = {},
+    val onCopyDiagnostics: (String) -> Unit = {},
 )
 
 const val REPO_URL = "https://github.com/YeongGyu1110/github-grass-widget"

@@ -42,6 +42,7 @@ object AppIcons {
 
     // 기타
     val ChevronRight = icon("M9 18l6-6-6-6")
+    val ChevronLeft = icon("M15 18l-6-6 6-6")
     val Copy = icon(rect(8f, 8f, 14f, 14f, 2f), "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2")
     val Calendar = icon(rect(3f, 4f, 18f, 18f, 2f), "M16 2v4", "M8 2v4", "M3 10h18")
     val Flame = icon(

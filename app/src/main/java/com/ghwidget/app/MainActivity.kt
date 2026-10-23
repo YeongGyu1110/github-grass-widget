@@ -16,6 +16,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,12 +28,17 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.ghwidget.app.data.DiagLog
 import com.ghwidget.app.data.GitHubAuth
 import com.ghwidget.app.data.Settings
 import com.ghwidget.app.data.Store
 import com.ghwidget.app.data.ThemeMode
+import com.ghwidget.app.data.TokenManager
 import com.ghwidget.app.ui.Account
 import com.ghwidget.app.ui.HomeActions
 import com.ghwidget.app.ui.MainScreen
@@ -69,6 +75,7 @@ class MainActivity : ComponentActivity() {
         }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        DiagLog.log(this, if (savedInstanceState == null) "앱 화면 열림" else "앱 화면 다시 만들어짐 (테마 등 설정 변경)")
         setContent { MainRoute(this) }
     }
 }
@@ -93,6 +100,7 @@ private fun MainRoute(activity: ComponentActivity) {
     var requestingCode by remember { mutableStateOf(false) }
     var loginError by remember { mutableStateOf<String?>(null) }
     var avatar by remember { mutableStateOf(loadAvatar(store)) }
+    var signOutNotice by remember { mutableStateOf(store.signOutNotice) }
 
     val workInfos by remember { WorkManager.getInstance(ctx).getWorkInfosForUniqueWorkFlow(Refresh.NOW) }
         .collectAsState(initial = emptyList())
@@ -105,6 +113,7 @@ private fun MainRoute(activity: ComponentActivity) {
             login = store.login
             signedIn = store.accessToken != null
             avatar = loadAvatar(store)
+            signOutNotice = store.signOutNotice
         }
     }
 
@@ -118,6 +127,7 @@ private fun MainRoute(activity: ComponentActivity) {
             val old = settings
             settings = new
             store.save(new)
+            if (new.appTheme != old.appTheme) DiagLog.log(ctx, "앱 테마 변경: ${old.appTheme} → ${new.appTheme}")
             // 앱 테마·새로고침 간격만 바뀐 경우에는 위젯을 다시 그리지 않는다
             if (new.copy(appTheme = old.appTheme, refreshHours = old.refreshHours) != old) WidgetUpdater.updateAll(ctx)
             if (new.refreshHours != old.refreshHours) Refresh.ensurePeriodic(ctx)
@@ -140,8 +150,10 @@ private fun MainRoute(activity: ComponentActivity) {
         onOpenGitHub = { pending?.let { openGitHubWithCode(ctx, it) } },
         onCancelLogin = ::cancelLogin,
         onSignOut = {
+            DiagLog.log(ctx, "사용자가 직접 로그아웃")
             WorkManager.getInstance(ctx).cancelUniqueWork(Refresh.NOW)
             store.signOut()
+            signOutNotice = null
             signedIn = false
             login = null
             data = null
@@ -149,11 +161,16 @@ private fun MainRoute(activity: ComponentActivity) {
             avatar = null
             WidgetUpdater.updateAll(ctx)
         },
-        onRefresh = { Refresh.now(ctx) },
+        onRefresh = { Refresh.now(ctx, "앱에서 새로고침") },
         onPinWidget = {
             widgetManager.requestPinAppWidget(ComponentName(ctx, ContributionWidgetProvider::class.java), null, null)
         },
         onOpenUrl = { url -> runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } },
+        loadDiagnostics = { DiagLog.read(ctx) },
+        onClearDiagnostics = { DiagLog.clear(ctx) },
+        onCopyDiagnostics = { text ->
+            ctx.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("GitHub 잔디 진단 기록", text))
+        },
     )
 
     // 진행 중인 로그인이 있으면 승인될 때까지 interval 초마다 확인한다
@@ -175,7 +192,13 @@ private fun MainRoute(activity: ComponentActivity) {
                 GitHubAuth.Poll.Pending -> {}
                 is GitHubAuth.Poll.SlowDown -> interval = result.interval
                 is GitHubAuth.Poll.Success -> {
-                    store.signIn(result.token)
+                    store.signIn(result.tokens)
+                    DiagLog.log(
+                        ctx,
+                        "로그인 완료 (토큰 만료: ${result.tokens.accessExpiresAt?.let(TokenManager::time) ?: "없음"}, " +
+                            "갱신 토큰: ${if (result.tokens.refreshToken != null) "있음" else "없음"})",
+                    )
+                    signOutNotice = null
                     pending = null
                     signedIn = true
                     login = null
@@ -184,7 +207,7 @@ private fun MainRoute(activity: ComponentActivity) {
                     loginError = null
                     WidgetUpdater.updateAll(ctx)
                     Refresh.ensurePeriodic(ctx)
-                    Refresh.now(ctx)
+                    Refresh.now(ctx, "로그인 직후")
                     break
                 }
                 is GitHubAuth.Poll.Failed -> {
@@ -196,9 +219,19 @@ private fun MainRoute(activity: ComponentActivity) {
         }
     }
 
-    // 로그인돼 있는데 데이터가 없으면 앱을 열 때 받아온다
-    LaunchedEffect(Unit) {
-        if (signedIn && data == null && !refreshing) Refresh.now(ctx)
+    // 앱을 열거나 다시 돌아왔을 때: 데이터가 없거나 10분 넘게 지났거나 지난번 동기화가 실패했으면 다시 받는다.
+    // (앱이 화면에 떠 있을 때는 네트워크가 막히지 않으므로, 백그라운드에서 실패한 동기화를 여기서 만회)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event != Lifecycle.Event.ON_RESUME || store.accessToken == null) return@LifecycleEventObserver
+            val now = System.currentTimeMillis()
+            val cached = store.cachedData()
+            val stale = cached == null || now - cached.fetchedAt > 10 * 60_000L || store.lastError != null
+            if (stale && now - store.lastAttemptAt > 60_000L) Refresh.now(ctx, "앱 열기 (데이터 오래됨/지난 실패)")
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // 앱 테마: 설정이 '시스템'이면 휴대폰 설정을 따른다
@@ -226,7 +259,9 @@ private fun MainRoute(activity: ComponentActivity) {
                     else -> Account.SignedOut
                 },
                 data = data,
-                error = error,
+                // 동기화 중에는 지난번 오류를 숨긴다 (곧 결과가 나오므로)
+                error = if (refreshing) null else error,
+                signOutNotice = signOutNotice,
                 refreshing = refreshing,
                 requestingCode = requestingCode,
                 loginError = loginError,

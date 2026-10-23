@@ -1,5 +1,6 @@
 package com.ghwidget.app
 
+import android.Manifest
 import android.appwidget.AppWidgetManager
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -8,11 +9,15 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
@@ -39,6 +44,7 @@ import com.ghwidget.app.data.Settings
 import com.ghwidget.app.data.Store
 import com.ghwidget.app.data.ThemeMode
 import com.ghwidget.app.data.TokenManager
+import com.ghwidget.app.reminder.Reminders
 import com.ghwidget.app.ui.Account
 import com.ghwidget.app.ui.HomeActions
 import com.ghwidget.app.ui.MainScreen
@@ -101,6 +107,8 @@ private fun MainRoute(activity: ComponentActivity) {
     var loginError by remember { mutableStateOf<String?>(null) }
     var avatar by remember { mutableStateOf(loadAvatar(store)) }
     var signOutNotice by remember { mutableStateOf(store.signOutNotice) }
+    var reminderNextAt by remember { mutableStateOf(store.reminderNextAt) }
+    var notificationsAllowed by remember { mutableStateOf(Reminders.canNotify(ctx)) }
 
     val workInfos by remember { WorkManager.getInstance(ctx).getWorkInfosForUniqueWorkFlow(Refresh.NOW) }
         .collectAsState(initial = emptyList())
@@ -122,16 +130,39 @@ private fun MainRoute(activity: ComponentActivity) {
         pending = null
     }
 
+    fun applySettings(new: Settings) {
+        val old = settings
+        settings = new
+        store.save(new)
+        if (new.appTheme != old.appTheme) DiagLog.log(ctx, "앱 테마 변경: ${old.appTheme} → ${new.appTheme}")
+        // 앱 테마·새로고침 간격·잔디 알림 설정만 바뀐 경우에는 위젯을 다시 그리지 않는다
+        val widgetPart = new.copy(
+            appTheme = old.appTheme, refreshHours = old.refreshHours, reminderEnabled = old.reminderEnabled,
+            reminderStartHour = old.reminderStartHour, reminderIntervalMin = old.reminderIntervalMin,
+        )
+        if (widgetPart != old) WidgetUpdater.updateAll(ctx)
+        if (new.refreshHours != old.refreshHours) Refresh.ensurePeriodic(ctx)
+        if (new.reminderEnabled != old.reminderEnabled || new.reminderStartHour != old.reminderStartHour ||
+            new.reminderIntervalMin != old.reminderIntervalMin
+        ) {
+            if (new.reminderEnabled != old.reminderEnabled) DiagLog.log(ctx, "잔디 알림 ${if (new.reminderEnabled) "켬" else "끔"}")
+            Reminders.schedule(ctx)
+            reminderNextAt = store.reminderNextAt
+        }
+    }
+
+    // 잔디 알림을 켤 때 알림 권한 요청 → 허용하면 켠다
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        notificationsAllowed = Reminders.canNotify(ctx)
+        if (granted) {
+            applySettings(settings.copy(reminderEnabled = true))
+        } else {
+            Toast.makeText(ctx, "알림 권한이 있어야 잔디 알림을 받을 수 있어요", Toast.LENGTH_LONG).show()
+        }
+    }
+
     val actions = HomeActions(
-        onSettingsChange = { new: Settings ->
-            val old = settings
-            settings = new
-            store.save(new)
-            if (new.appTheme != old.appTheme) DiagLog.log(ctx, "앱 테마 변경: ${old.appTheme} → ${new.appTheme}")
-            // 앱 테마·새로고침 간격만 바뀐 경우에는 위젯을 다시 그리지 않는다
-            if (new.copy(appTheme = old.appTheme, refreshHours = old.refreshHours) != old) WidgetUpdater.updateAll(ctx)
-            if (new.refreshHours != old.refreshHours) Refresh.ensurePeriodic(ctx)
-        },
+        onSettingsChange = ::applySettings,
         onLogin = {
             scope.launch {
                 requestingCode = true
@@ -153,6 +184,8 @@ private fun MainRoute(activity: ComponentActivity) {
             DiagLog.log(ctx, "사용자가 직접 로그아웃")
             WorkManager.getInstance(ctx).cancelUniqueWork(Refresh.NOW)
             store.signOut()
+            Reminders.cancel(ctx)
+            reminderNextAt = 0L
             signOutNotice = null
             signedIn = false
             login = null
@@ -170,6 +203,27 @@ private fun MainRoute(activity: ComponentActivity) {
         onClearDiagnostics = { DiagLog.clear(ctx) },
         onCopyDiagnostics = { text ->
             ctx.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("GitHub 잔디 진단 기록", text))
+        },
+        onReminderToggle = { on ->
+            when {
+                !on -> applySettings(settings.copy(reminderEnabled = false))
+                // Android 13+ 은 알림 권한을 먼저 받아야 한다 (허용하면 그때 켬)
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !Reminders.canNotify(ctx) ->
+                    notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                else -> applySettings(settings.copy(reminderEnabled = true))
+            }
+        },
+        onPreviewReminder = {
+            if (Reminders.canNotify(ctx)) Reminders.preview(ctx)
+            else Toast.makeText(ctx, "알림 권한을 먼저 켜 주세요", Toast.LENGTH_SHORT).show()
+        },
+        onOpenNotificationSettings = {
+            runCatching {
+                ctx.startActivity(
+                    Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName),
+                )
+            }
         },
     )
 
@@ -207,6 +261,8 @@ private fun MainRoute(activity: ComponentActivity) {
                     loginError = null
                     WidgetUpdater.updateAll(ctx)
                     Refresh.ensurePeriodic(ctx)
+                    Reminders.schedule(ctx)
+                    reminderNextAt = store.reminderNextAt
                     Refresh.now(ctx, "로그인 직후")
                     break
                 }
@@ -224,7 +280,12 @@ private fun MainRoute(activity: ComponentActivity) {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event != Lifecycle.Event.ON_RESUME || store.accessToken == null) return@LifecycleEventObserver
+            if (event != Lifecycle.Event.ON_RESUME) return@LifecycleEventObserver
+            // 알림 권한을 설정에서 바꾸고 돌아왔을 수 있고, 알람이 사라졌을 수도 있으니 다시 확인
+            notificationsAllowed = Reminders.canNotify(ctx)
+            Reminders.schedule(ctx)
+            reminderNextAt = store.reminderNextAt
+            if (store.accessToken == null) return@LifecycleEventObserver
             val now = System.currentTimeMillis()
             val cached = store.cachedData()
             val stale = cached == null || now - cached.fetchedAt > 10 * 60_000L || store.lastError != null
@@ -262,6 +323,8 @@ private fun MainRoute(activity: ComponentActivity) {
                 // 동기화 중에는 지난번 오류를 숨긴다 (곧 결과가 나오므로)
                 error = if (refreshing) null else error,
                 signOutNotice = signOutNotice,
+                reminderNextAt = reminderNextAt,
+                notificationsAllowed = notificationsAllowed,
                 refreshing = refreshing,
                 requestingCode = requestingCode,
                 loginError = loginError,

@@ -21,6 +21,12 @@ data class Settings(
     val refreshHours: Int = 3,
     /** 이 앱 화면의 테마 (위젯 테마와 별개) */
     val appTheme: ThemeMode = ThemeMode.SYSTEM,
+    /** 늦은 시간까지 오늘 기여가 없으면 알림 */
+    val reminderEnabled: Boolean = false,
+    /** 첫 알림 시각 (시) */
+    val reminderStartHour: Int = 21,
+    /** 알림 간격 (분): 30 또는 60 */
+    val reminderIntervalMin: Int = 60,
 )
 
 /** 설정·로그인 정보(SharedPreferences) + 마지막으로 받아온 데이터 캐시(파일) */
@@ -44,6 +50,9 @@ class Store(context: Context) {
         showMonths = prefs.getBoolean("showMonths", true),
         refreshHours = prefs.getInt("refreshHours", 3),
         appTheme = enumOr(prefs.getString("appTheme", null), ThemeMode.SYSTEM),
+        reminderEnabled = prefs.getBoolean("reminderEnabled", false),
+        reminderStartHour = prefs.getInt("reminderStartHour", 21),
+        reminderIntervalMin = prefs.getInt("reminderIntervalMin", 60),
     )
 
     fun save(s: Settings) = prefs.edit {
@@ -54,6 +63,9 @@ class Store(context: Context) {
         putBoolean("showMonths", s.showMonths)
         putInt("refreshHours", s.refreshHours)
         putString("appTheme", s.appTheme.name)
+        putBoolean("reminderEnabled", s.reminderEnabled)
+        putInt("reminderStartHour", s.reminderStartHour)
+        putInt("reminderIntervalMin", s.reminderIntervalMin)
     }
 
     // ------------------------------------------------------------ 로그인
@@ -168,6 +180,16 @@ class Store(context: Context) {
     var lastError: String?
         get() = prefs.getString("lastError", null)
         set(v) = prefs.edit { putString("lastError", v) }
+
+    /** 다음 잔디 알림 확인 시각 (epoch ms), 0 이면 예약 없음 */
+    var reminderNextAt: Long
+        get() = prefs.getLong("reminderNextAt", 0L)
+        set(v) = prefs.edit { putLong("reminderNextAt", v) }
+
+    /** "오늘은 그만"을 누른 날짜 (그날은 더 알리지 않음) */
+    var reminderMutedDate: String?
+        get() = prefs.getString("reminderMutedDate", null)
+        set(v) = prefs.edit { putString("reminderMutedDate", v) }
 
     var lastAttemptAt: Long
         get() = prefs.getLong("lastAttemptAt", 0L)

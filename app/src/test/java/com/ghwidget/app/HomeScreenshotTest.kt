@@ -64,7 +64,7 @@ class HomeScreenshotTest {
         data = null,
         error = null,
         refreshing = false,
-        versionName = "v1.6.0",
+        versionName = "v1.7.0",
     )
 
     @Test fun signedInLight() = shoot("signed_in_light", false,
@@ -92,6 +92,15 @@ class HomeScreenshotTest {
 
     @Test fun settingsTabDark() = shoot("settings_dark", true,
         base.copy(account = Account.SignedIn("octocat"), data = sampleData()), Tab.Settings)
+
+    @Test fun settingsReminderLight() = shoot("settings_reminder_light", false,
+        base.copy(
+            account = Account.SignedIn("octocat"), data = sampleData(),
+            settings = Settings(reminderEnabled = true, reminderStartHour = 21, reminderIntervalMin = 30),
+            reminderNextAt = System.currentTimeMillis() + 3_600_000L,
+        ),
+        Tab.Settings,
+    )
 
     @Test fun loadingLight() = shoot("loading_light", false, base.copy(account = Account.SignedIn("octocat"), refreshing = true))
 }

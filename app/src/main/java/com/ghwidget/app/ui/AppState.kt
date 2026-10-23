@@ -31,6 +31,10 @@ data class HomeState(
     val avatar: ImageBitmap? = null,
     /** 자동으로 로그아웃된 이유 (로그인 화면에 보여줌) */
     val signOutNotice: String? = null,
+    /** 다음 잔디 알림 확인 시각 (epoch ms), 0 이면 없음 */
+    val reminderNextAt: Long = 0L,
+    /** 알림 권한이 있는지 */
+    val notificationsAllowed: Boolean = true,
 )
 
 class HomeActions(
@@ -46,6 +50,10 @@ class HomeActions(
     val loadDiagnostics: () -> List<String> = { emptyList() },
     val onClearDiagnostics: () -> Unit = {},
     val onCopyDiagnostics: (String) -> Unit = {},
+    /** 잔디 알림 켜기/끄기 (켤 때 알림 권한 요청) */
+    val onReminderToggle: (Boolean) -> Unit = {},
+    val onPreviewReminder: () -> Unit = {},
+    val onOpenNotificationSettings: () -> Unit = {},
 )
 
 const val REPO_URL = "https://github.com/YeongGyu1110/github-grass-widget"

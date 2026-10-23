@@ -40,6 +40,8 @@ object AppIcons {
         "M14 2v4", "M8 10v4", "M16 18v4",
     )
 
+    val Bell = icon("M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9", "M10.3 21a1.94 1.94 0 0 0 3.4 0")
+
     // 기타
     val ChevronRight = icon("M9 18l6-6-6-6")
     val ChevronLeft = icon("M15 18l-6-6 6-6")

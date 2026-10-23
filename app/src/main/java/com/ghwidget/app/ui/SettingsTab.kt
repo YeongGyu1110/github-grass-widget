@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +23,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ghwidget.app.data.ThemeMode
+import com.ghwidget.app.reminder.Reminders
+import com.ghwidget.app.ui.components.Alert
+import com.ghwidget.app.ui.components.AppSwitch
 import com.ghwidget.app.ui.components.AppButton
 import com.ghwidget.app.ui.components.AppCard
 import com.ghwidget.app.ui.components.AppDivider
@@ -77,6 +81,8 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
                 )
             }
         }
+
+        ReminderGroup(state, actions)
 
         ListGroup("동기화", footer = "배터리가 부족하면 자동 새로고침을 건너뛰고, 그래프가 바뀌지 않으면 위젯을 다시 그리지 않습니다.") {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -216,6 +222,65 @@ private fun DiagnosticsPage(actions: HomeActions, onBack: () -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
+
+private val REMINDER_HOURS = listOf(18, 20, 21, 22)
+private val REMINDER_INTERVALS = listOf(30, 60)
+
+/** 잔디 알림: 늦은 시간까지 오늘 기여가 없으면 여러 번 알림 */
+@Composable
+private fun ReminderGroup(state: HomeState, actions: HomeActions) {
+    val c = AppTheme.colors
+    val s = state.settings
+    ListGroup(
+        "잔디 알림",
+        footer = "GitHub에서 오늘 기여가 0건일 때만 알려요. 커밋이 확인되면 그날 남은 알림은 보내지 않고, 알림의 '오늘은 그만'으로 멈출 수도 있어요.",
+    ) {
+        ListRow(
+            "오늘 기여가 없으면 알림",
+            icon = AppIcons.Bell,
+            description = when {
+                !s.reminderEnabled -> "늦은 시간까지 잔디가 비어 있으면 여러 번 나눠 알려 드려요"
+                state.reminderNextAt > 0 -> "다음 확인: ${Reminders.describe(
+                    java.time.Instant.ofEpochMilli(state.reminderNextAt).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),
+                )}"
+                else -> "켜짐"
+            },
+            trailing = { AppSwitch(s.reminderEnabled) { actions.onReminderToggle(it) } },
+        )
+        if (s.reminderEnabled) {
+            if (!state.notificationsAllowed) {
+                AppDivider()
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Alert("알림 권한이 꺼져 있어요", "권한을 켜야 잔디 알림을 받을 수 있어요.")
+                    AppButton("알림 설정 열기", actions.onOpenNotificationSettings, variant = ButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
+                }
+            }
+            AppDivider()
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("첫 알림 시각", style = MaterialTheme.typography.titleSmall, color = c.foreground)
+                SegmentedControl(
+                    REMINDER_HOURS.map { "${it}시" },
+                    REMINDER_HOURS.indexOf(s.reminderStartHour).coerceAtLeast(0),
+                    { actions.onSettingsChange(s.copy(reminderStartHour = REMINDER_HOURS[it])) },
+                )
+                Text("간격", style = MaterialTheme.typography.titleSmall, color = c.foreground)
+                SegmentedControl(
+                    listOf("30분마다", "1시간마다"),
+                    REMINDER_INTERVALS.indexOf(s.reminderIntervalMin).coerceAtLeast(0),
+                    { actions.onSettingsChange(s.copy(reminderIntervalMin = REMINDER_INTERVALS[it])) },
+                )
+                val times = Reminders.slots(java.time.LocalDate.now(), s).map { it.toLocalTime().toString() }
+                Text(
+                    "${times.joinToString(" · ")} (하루 최대 ${times.size}번)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.mutedForeground,
+                )
+            }
+            AppDivider()
+            ListRow("알림 미리 보기", icon = AppIcons.Bell, showChevron = true, onClick = actions.onPreviewReminder)
         }
     }
 }

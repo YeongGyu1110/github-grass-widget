@@ -36,9 +36,40 @@ object DiagLog {
         }
     }
 
+    /** 기록 종류 (진단 기록 화면에서 골라 보기용) */
+    enum class Kind(val label: String) { SYNC("동기화"), AUTH("로그인·토큰"), REMINDER("잔디 알림"), APP("앱") }
+
+    data class Entry(val time: String, val message: String) {
+        val kind: Kind get() = kindOf(message)
+        val isError: Boolean get() = isError(message)
+        /** 파일에 저장된 한 줄 그대로 (복사용) */
+        val line: String get() = if (time.isEmpty()) message else "$time  $message"
+    }
+
+    /**
+     * 종류는 따로 저장하지 않고 문구로 나눈다. 그래서 이전에 남은 기록도 그대로 분류된다.
+     * 새 문구를 추가할 때는 아래 규칙에 맞는지 확인할 것 (DiagLogTest).
+     */
+    fun kindOf(message: String): Kind = when {
+        message.startsWith("잔디 알림") -> Kind.REMINDER
+        message.startsWith("동기화") || message.startsWith("새로고침") || message.startsWith("네트워크") -> Kind.SYNC
+        "토큰" in message || "로그인" in message || "로그아웃" in message || "401" in message -> Kind.AUTH
+        else -> Kind.APP
+    }
+
+    /** "동기화 실패: …"처럼 실패를 알리는 기록 ("(지난 실패)" 때문에 다시 받는 기록은 제외) */
+    fun isError(message: String): Boolean = "실패:" in message || "못함" in message || "401" in message ||
+        message.startsWith("자동 로그아웃") || message.startsWith("네트워크 오류")
+
+    /** "MM-dd HH:mm:ss  내용" 한 줄을 나눈다 */
+    fun parse(line: String): Entry {
+        val sep = line.indexOf("  ")
+        return if (sep == 14) Entry(line.substring(0, sep), line.substring(sep + 2)) else Entry("", line)
+    }
+
     /** 최근 것이 먼저 오도록 */
-    fun read(context: Context): List<String> = synchronized(lock) {
-        runCatching { file(context).readLines().filter { it.isNotBlank() }.reversed() }.getOrDefault(emptyList())
+    fun read(context: Context): List<Entry> = synchronized(lock) {
+        runCatching { file(context).readLines().filter { it.isNotBlank() }.reversed().map(::parse) }.getOrDefault(emptyList())
     }
 
     fun clear(context: Context) = synchronized(lock) { file(context).delete(); Unit }

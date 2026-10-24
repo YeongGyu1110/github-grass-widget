@@ -2,12 +2,19 @@ package com.ghwidget.app.ui
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,10 +25,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ghwidget.app.data.DiagLog
 import com.ghwidget.app.data.ThemeMode
 import com.ghwidget.app.reminder.Reminders
 import com.ghwidget.app.ui.components.Alert
@@ -169,60 +179,138 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
     }
 }
 
-/** 진단 기록: 동기화·로그인·토큰 갱신·네트워크 오류 기록 (최신순) */
+/**
+ * 진단 기록: 동기화·로그인·토큰 갱신·잔디 알림 기록 (최신순).
+ * 필터는 서로 독립인 두 가지:
+ * - 종류 칩(여러 개 선택 가능): "전체"는 아무 종류도 고르지 않은 상태이고, 누르면 종류 선택을 지운다.
+ *   네 종류를 다 골라도 "전체"로 바꾸지 않는다 (고른 상태에서 하나만 빼는 경우가 있으므로)
+ * - 제목 옆 "오류만": 종류와 다른 기준이라 따로 둔다
+ * 칩의 건수는 다른 쪽 필터를 반영해, 누르면 몇 건이 보일지 알려 준다.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DiagnosticsPage(actions: HomeActions, onBack: () -> Unit) {
     val c = AppTheme.colors
     val context = LocalContext.current
-    var lines by remember { mutableStateOf(actions.loadDiagnostics()) }
+    var entries by remember { mutableStateOf(actions.loadDiagnostics()) }
+    var kinds by remember { mutableStateOf(emptySet<DiagLog.Kind>()) }
+    var errorsOnly by remember { mutableStateOf(false) }
+    val ofSeverity = if (errorsOnly) entries.filter { it.isError } else entries
+    val ofKinds = if (kinds.isEmpty()) entries else entries.filter { it.kind in kinds }
+    val shown = ofKinds.filter { !errorsOnly || it.isError }
+    val filtered = kinds.isNotEmpty() || errorsOnly
     BackHandler(onBack = onBack)
 
     TabPage {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
             AppIconButton(AppIcons.ChevronLeft, "뒤로", onBack)
-            Column(Modifier.padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("진단 기록", style = MaterialTheme.typography.headlineSmall, color = c.foreground)
-                Text("최근 ${lines.size}건 · 최신순", style = MaterialTheme.typography.bodySmall, color = c.mutedForeground)
+                Text(
+                    if (filtered) "${shown.size}건 표시 · 전체 ${entries.size}건 · 최신순" else "최근 ${entries.size}건 · 최신순",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.mutedForeground,
+                )
+            }
+            FilterChip(
+                "오류만", ofKinds.count { it.isError }, selected = errorsOnly,
+                destructive = true, icon = AppIcons.AlertCircle,
+            ) { errorsOnly = !errorsOnly }
+        }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            FilterChip("전체", ofSeverity.size, selected = kinds.isEmpty()) { kinds = emptySet() }
+            DiagLog.Kind.entries.forEach { kind ->
+                FilterChip(kind.label, ofSeverity.count { it.kind == kind }, selected = kind in kinds) {
+                    kinds = if (kind in kinds) kinds - kind else kinds + kind
+                }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AppButton(
-                "복사",
+                if (filtered) "보이는 기록 복사" else "복사",
                 {
-                    actions.onCopyDiagnostics(lines.reversed().joinToString("\n"))
-                    Toast.makeText(context, "진단 기록을 복사했습니다", Toast.LENGTH_SHORT).show()
+                    actions.onCopyDiagnostics(shown.reversed().joinToString("\n") { it.line })
+                    Toast.makeText(context, "진단 기록 ${shown.size}건을 복사했습니다", Toast.LENGTH_SHORT).show()
                 },
                 variant = ButtonVariant.Outline,
                 icon = AppIcons.Copy,
-                enabled = lines.isNotEmpty(),
+                enabled = shown.isNotEmpty(),
                 modifier = Modifier.weight(1f),
             )
             AppButton(
-                "지우기",
-                { actions.onClearDiagnostics(); lines = emptyList() },
+                "모두 지우기",
+                { actions.onClearDiagnostics(); entries = emptyList() },
                 variant = ButtonVariant.Outline,
                 destructive = true,
-                enabled = lines.isNotEmpty(),
+                enabled = entries.isNotEmpty(),
                 modifier = Modifier.weight(1f),
             )
         }
         AppCard {
-            if (lines.isEmpty()) {
-                Text("아직 기록이 없습니다", style = MaterialTheme.typography.bodySmall, color = c.mutedForeground)
+            if (shown.isEmpty()) {
+                Text(
+                    if (entries.isEmpty()) "아직 기록이 없습니다" else "고른 종류의 기록이 없습니다",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.mutedForeground,
+                )
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    lines.forEach { line ->
-                        Text(
-                            line,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp,
-                            color = if (line.contains("실패") || line.contains("로그아웃") || line.contains("401")) c.destructive else c.foreground,
-                        )
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    shown.forEach { DiagnosticsEntry(it) }
                 }
             }
         }
+    }
+}
+
+/** 기록 한 건: 시각·종류 한 줄 + 내용 */
+@Composable
+private fun DiagnosticsEntry(entry: DiagLog.Entry) {
+    val c = AppTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        Text(
+            "${entry.time}  ·  ${entry.kind.label}",
+            fontFamily = FontFamily.Monospace,
+            fontSize = 10.sp,
+            lineHeight = 13.sp,
+            color = c.mutedForeground,
+        )
+        Text(
+            entry.message,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            color = if (entry.isError) c.destructive else c.foreground,
+        )
+    }
+}
+
+/** 골라 보기 칩: 고르면 채워진다 */
+@Composable
+private fun FilterChip(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    destructive: Boolean = false,
+    icon: ImageVector? = null,
+    onClick: () -> Unit,
+) {
+    val c = AppTheme.colors
+    val fill = if (destructive) c.destructive else c.primary
+    Row(
+        Modifier
+            .clip(Radius.pill)
+            .then(if (selected) Modifier.background(fill) else Modifier.border(1.dp, c.border, Radius.pill))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        // 다크 테마의 빨강은 밝아서 흰 글자 대신 primaryForeground(다크에서는 짙은 색)를 쓴다
+        val fg = if (selected) c.primaryForeground else c.foreground
+        if (icon != null) {
+            Icon(icon, null, Modifier.size(14.dp), tint = if (selected) fg else if (destructive) c.destructive else c.mutedForeground)
+        }
+        Text(label, style = MaterialTheme.typography.labelLarge, color = fg)
+        Text("$count", style = MaterialTheme.typography.labelMedium, color = if (selected) fg.copy(alpha = 0.75f) else c.mutedForeground)
     }
 }
 

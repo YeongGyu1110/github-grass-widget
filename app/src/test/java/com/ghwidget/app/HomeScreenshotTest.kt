@@ -3,9 +3,13 @@ package com.ghwidget.app
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.core.view.drawToBitmap
 import com.ghwidget.app.data.ContributionData
 import com.ghwidget.app.data.ContributionDay
+import com.ghwidget.app.data.DiagLog
 import com.ghwidget.app.data.GitHubAuth
 import com.ghwidget.app.data.Settings
 import com.ghwidget.app.ui.Account
@@ -52,6 +56,10 @@ class HomeScreenshotTest {
         compose.setContent {
             AppTheme(darkTheme = dark) { MainScreen(state.copy(systemDark = dark), HomeActions(), initialTab = tab) }
         }
+        capture(name)
+    }
+
+    private fun capture(name: String) {
         compose.waitForIdle()
         // captureToImage 는 Robolectric 에서 다시 그리기를 기다리다 멈추므로 뷰를 직접 비트맵에 그린다
         val bmp = compose.activity.window.decorView.drawToBitmap()
@@ -64,7 +72,7 @@ class HomeScreenshotTest {
         data = null,
         error = null,
         refreshing = false,
-        versionName = "v1.7.1",
+        versionName = "v1.7.2",
     )
 
     @Test fun signedInLight() = shoot("signed_in_light", false,
@@ -103,4 +111,39 @@ class HomeScreenshotTest {
     )
 
     @Test fun loadingLight() = shoot("loading_light", false, base.copy(account = Account.SignedIn("octocat"), refreshing = true))
+
+    private val sampleLog = listOf(
+        "10-24 14:33:37  동기화 성공 (변화 없음)",
+        "10-24 14:33:36  동기화 시작: 앱 열기 (데이터 오래됨/지난 실패) (시도 1, 네트워크: Wi-Fi)",
+        "10-24 14:33:36  앱 화면 열림",
+        "10-24 12:10:05  동기화 실패: 인터넷에 연결할 수 없어 GitHub 주소를 찾지 못했습니다 [UnknownHostException: api.github.com] → 잠시 뒤 재시도",
+        "10-24 10:48:38  토큰 갱신 성공 → 다음 만료 10-24 18:48",
+        "10-24 10:48:38  토큰 갱신 시도 (만료됨: 10-24 09:01)",
+        "10-24 10:48:38  동기화 시작: 주기 갱신 (시도 1, 네트워크: Wi-Fi)",
+        "10-23 22:07:00  잔디 알림 예약: 내일 21:00 (오늘은 건너뜀)",
+        "10-23 22:07:00  잔디 알림 켬",
+    ).map(DiagLog::parse)
+
+    /** 설정 → 진단 기록으로 들어가 chips 를 차례로 누른 화면 */
+    private fun openDiagnostics(name: String, vararg chips: String) {
+        compose.setContent {
+            AppTheme(darkTheme = false) {
+                MainScreen(
+                    base.copy(account = Account.SignedIn("octocat"), data = sampleData()),
+                    HomeActions(loadDiagnostics = { sampleLog }),
+                    initialTab = Tab.Settings,
+                )
+            }
+        }
+        compose.onNodeWithText("진단 기록").performScrollTo().performClick()
+        chips.forEach { compose.onNodeWithText(it).performClick() }
+        capture(name)
+    }
+
+    @Test fun diagnosticsAll() = openDiagnostics("diagnostics_all")
+
+    @Test fun diagnosticsFiltered() = openDiagnostics("diagnostics_filtered", "동기화", "오류만")
+
+    // 네 종류를 다 골라도 "전체"로 바뀌지 않고 고른 상태가 그대로 남아야 한다
+    @Test fun diagnosticsAllKinds() = openDiagnostics("diagnostics_all_kinds", "동기화", "로그인·토큰", "잔디 알림", "앱")
 }

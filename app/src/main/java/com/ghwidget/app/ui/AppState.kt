@@ -2,6 +2,7 @@ package com.ghwidget.app.ui
 
 import androidx.compose.ui.graphics.ImageBitmap
 import com.ghwidget.app.data.ContributionData
+import com.ghwidget.app.data.DiagLog
 import com.ghwidget.app.data.GitHubAuth
 import com.ghwidget.app.data.Settings
 
@@ -47,7 +48,7 @@ class HomeActions(
     val onPinWidget: () -> Unit = {},
     val onOpenUrl: (String) -> Unit = {},
     /** 진단 기록 (최근 것이 먼저) */
-    val loadDiagnostics: () -> List<String> = { emptyList() },
+    val loadDiagnostics: () -> List<DiagLog.Entry> = { emptyList() },
     val onClearDiagnostics: () -> Unit = {},
     val onCopyDiagnostics: (String) -> Unit = {},
     /** 잔디 알림 켜기/끄기 (켤 때 알림 권한 요청) */

@@ -90,6 +90,16 @@ class TokenRefreshTest {
     }
 
     @Test
+    fun refreshReasonSaysExpiredWhenPastExpiry() {
+        val expiry = 1_000_000_000L
+        assertEquals("401 응답", TokenManager.refreshReason(force = true, expiresAt = expiry, now = expiry - 1))
+        // 만료 5분 전 안쪽
+        assertTrue(TokenManager.refreshReason(false, expiry, expiry - 60_000L).endsWith("임박"))
+        // 동기화 간격 때문에 만료 뒤에 갱신하는 경우
+        assertTrue(TokenManager.refreshReason(false, expiry, expiry + 3_600_000L).startsWith("만료됨: "))
+    }
+
+    @Test
     fun networkErrorsAreRetryableAndFriendly() {
         val dns = UnknownHostException("Unable to resolve host \"api.github.com\": No address associated with hostname")
         assertTrue(isNetworkError(dns))

@@ -36,13 +36,14 @@ object TokenManager {
         if (rejected != null && token != rejected) return Result.Ok(token)
         val force = rejected != null
         val expiresAt = store.accessExpiresAt
-        val due = force || (expiresAt > 0 && System.currentTimeMillis() > expiresAt - REFRESH_MARGIN_MS)
+        val now = System.currentTimeMillis()
+        val due = force || (expiresAt > 0 && now > expiresAt - REFRESH_MARGIN_MS)
         if (!due) return Result.Ok(token)
 
         val refreshToken = store.refreshToken
             ?: return if (force) Result.NeedLogin("GitHub가 로그인 토큰을 거부했습니다 (HTTP 401)") else Result.Ok(token)
 
-        DiagLog.log(context, "토큰 갱신 시도 (${if (force) "401 응답" else "만료 ${time(expiresAt)} 임박"})")
+        DiagLog.log(context, "토큰 갱신 시도 (${refreshReason(force, expiresAt, now)})")
         return when (val r = GitHubAuth.refresh(refreshToken)) {
             is GitHubAuth.Refresh.Refreshed -> {
                 store.saveTokens(r.tokens)
@@ -54,6 +55,13 @@ object TokenManager {
                 Result.NeedLogin(r.message)
             }
         }
+    }
+
+    /** 갱신 이유 (기록용). 동기화 간격 때문에 만료 시각이 이미 지난 뒤에 갱신하는 경우가 많다 */
+    internal fun refreshReason(force: Boolean, expiresAt: Long, now: Long): String = when {
+        force -> "401 응답"
+        now >= expiresAt -> "만료됨: ${time(expiresAt)}"
+        else -> "만료 ${time(expiresAt)} 임박"
     }
 
     fun time(epochMs: Long): String = SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(epochMs))

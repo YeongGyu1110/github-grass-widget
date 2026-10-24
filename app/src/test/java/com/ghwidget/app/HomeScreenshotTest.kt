@@ -2,7 +2,12 @@ package com.ghwidget.app
 
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -11,8 +16,11 @@ import com.ghwidget.app.data.ContributionData
 import com.ghwidget.app.data.ContributionDay
 import com.ghwidget.app.data.DiagLog
 import com.ghwidget.app.data.GitHubAuth
+import com.ghwidget.app.widget.Palette
+import com.ghwidget.app.data.PaletteId
 import com.ghwidget.app.data.Settings
 import com.ghwidget.app.ui.Account
+import com.ghwidget.app.ui.charts.ContributionHeatmap
 import com.ghwidget.app.ui.HomeActions
 import com.ghwidget.app.ui.MainScreen
 import com.ghwidget.app.ui.Tab
@@ -72,7 +80,7 @@ class HomeScreenshotTest {
         data = null,
         error = null,
         refreshing = false,
-        versionName = "v1.7.2",
+        versionName = "v1.7.3",
     )
 
     @Test fun signedInLight() = shoot("signed_in_light", false,
@@ -111,6 +119,19 @@ class HomeScreenshotTest {
     )
 
     @Test fun loadingLight() = shoot("loading_light", false, base.copy(account = Account.SignedIn("octocat"), refreshing = true))
+
+    /** 이번 주(맨 오른쪽 열) 칸을 고른 그래프: 선택 테두리 오른쪽이 잘리지 않아야 한다 */
+    @Test fun heatmapSelectedThisWeek() {
+        val data = sampleData()
+        compose.setContent {
+            AppTheme(darkTheme = false) {
+                Box(Modifier.width(400.dp).padding(16.dp)) {
+                    ContributionHeatmap(data, Palette.of(PaletteId.GREEN, dark = false).levels, data.lastDate) {}
+                }
+            }
+        }
+        capture("heatmap_selected_this_week")
+    }
 
     private val sampleLog = listOf(
         "10-24 14:33:37  동기화 성공 (변화 없음)",

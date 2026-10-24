@@ -13,8 +13,8 @@ android {
         applicationId = "com.ghwidget.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "1.7.2"
+        versionCode = 15
+        versionName = "1.7.3"
     }
 
     buildTypes {

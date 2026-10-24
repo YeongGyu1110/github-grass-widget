@@ -66,6 +66,11 @@ fun ContributionHeatmap(
     val cell = 13.dp
     val gap = 3.dp
     val monthH = 18.dp
+    // 선택 테두리는 칸 밖으로 (간격 + 선 두께/2)만큼 나온다. 가로 스크롤 영역은 경계 밖을 잘라내므로
+    // 맨 왼쪽·오른쪽 열(1년 전 주·이번 주)의 테두리가 잘리지 않게 그만큼 좌우 여백을 둔다
+    val outlineInset = 1.dp
+    val outlineWidth = 1.5.dp
+    val outlineOverhang = outlineInset + outlineWidth / 2
     val first = weekStart(data.days.first().date)
     val last = data.lastDate!!
     val weeks = (ChronoUnit.WEEKS.between(first, weekStart(last)) + 1).toInt()
@@ -82,7 +87,8 @@ fun ContributionHeatmap(
 
     Row {
         // 요일 라벨 (월·수·금)
-        Column(Modifier.padding(top = monthH, end = 6.dp), verticalArrangement = Arrangement.spacedBy(gap)) {
+        // 그래프 쪽 여백만큼 줄여서 라벨과 첫 열 사이 간격은 그대로
+        Column(Modifier.padding(top = monthH, end = 6.dp - outlineOverhang), verticalArrangement = Arrangement.spacedBy(gap)) {
             for (row in 0 until 7) {
                 Box(Modifier.height(cell), contentAlignment = Alignment.CenterStart) {
                     if (row % 2 == 1) {
@@ -97,6 +103,7 @@ fun ContributionHeatmap(
         Box(Modifier.horizontalScroll(scroll)) {
             Canvas(
                 Modifier
+                    .padding(horizontal = outlineOverhang)
                     .size(width, height)
                     .pointerInput(data) {
                         detectTapGestures { o ->
@@ -135,13 +142,13 @@ fun ContributionHeatmap(
                         val topLeft = Offset(col * step, top + row * step)
                         drawRoundRect(Color(levels[day?.level ?: 0]), topLeft, Size(cellPx, cellPx), radius)
                         if (date == selected) {
-                            val inset = 1.dp.toPx()
+                            val inset = outlineInset.toPx()
                             drawRoundRect(
                                 c.foreground,
                                 topLeft - Offset(inset, inset),
                                 Size(cellPx + inset * 2, cellPx + inset * 2),
                                 CornerRadius(cellPx * 0.3f),
-                                style = Stroke(width = 1.5.dp.toPx()),
+                                style = Stroke(width = outlineWidth.toPx()),
                             )
                         }
                     }

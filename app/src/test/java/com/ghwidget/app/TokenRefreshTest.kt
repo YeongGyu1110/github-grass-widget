@@ -105,6 +105,18 @@ class TokenRefreshTest {
         assertTrue(isNetworkError(dns))
         assertTrue(isNetworkError(SocketTimeoutException()))
         assertFalse(isNetworkError(IllegalStateException()))
-        assertEquals("인터넷에 연결할 수 없어 GitHub 주소를 찾지 못했습니다", friendlyError(dns))
+        assertEquals("Couldn't reach GitHub. Check your internet connection.", friendlyError(context, dns))
+    }
+
+    @Test
+    @Config(qualifiers = "ko")
+    fun friendlyErrorsAreKoreanOnKoreanDevices() {
+        assertEquals("인터넷에 연결할 수 없어 GitHub 주소를 찾지 못했습니다", friendlyError(context, UnknownHostException()))
+        assertEquals(
+            "OAuth App 설정에서 Device Flow가 꺼져 있습니다.",
+            GitHubAuth.errorMessage(context, "device_flow_disabled", null),
+        )
+        // 모르는 오류 코드는 GitHub 가 보낸 설명을 그대로
+        assertEquals("Something broke", GitHubAuth.errorMessage(context, "weird_error", "Something broke"))
     }
 }

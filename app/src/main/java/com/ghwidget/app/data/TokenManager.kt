@@ -1,6 +1,7 @@
 package com.ghwidget.app.data
 
 import android.content.Context
+import com.ghwidget.app.R
 import java.io.InterruptedIOException
 import java.net.ConnectException
 import java.net.NoRouteToHostException
@@ -31,7 +32,7 @@ object TokenManager {
      * 네트워크 오류는 IOException 으로 던진다 (토큰은 그대로 둔다).
      */
     fun token(context: Context, store: Store, rejected: String? = null): Result = synchronized(lock) {
-        val token = store.accessToken ?: return Result.NeedLogin("로그인 정보가 없습니다")
+        val token = store.accessToken ?: return Result.NeedLogin(context.getString(R.string.error_not_signed_in))
         // 다른 작업이 그사이 이미 갱신했으면 새 토큰을 그대로 쓴다
         if (rejected != null && token != rejected) return Result.Ok(token)
         val force = rejected != null
@@ -41,7 +42,7 @@ object TokenManager {
         if (!due) return Result.Ok(token)
 
         val refreshToken = store.refreshToken
-            ?: return if (force) Result.NeedLogin("GitHub가 로그인 토큰을 거부했습니다 (HTTP 401)") else Result.Ok(token)
+            ?: return if (force) Result.NeedLogin(context.getString(R.string.error_token_rejected)) else Result.Ok(token)
 
         DiagLog.log(context, "토큰 갱신 시도 (${refreshReason(force, expiresAt, now)})")
         return when (val r = GitHubAuth.refresh(refreshToken)) {
@@ -51,8 +52,9 @@ object TokenManager {
                 Result.Ok(r.tokens.accessToken)
             }
             is GitHubAuth.Refresh.Invalid -> {
-                DiagLog.log(context, "토큰 갱신 실패: ${r.message}")
-                Result.NeedLogin(r.message)
+                val message = GitHubAuth.errorMessage(context, r.error, r.description)
+                DiagLog.log(context, "토큰 갱신 실패: $message")
+                Result.NeedLogin(message)
             }
         }
     }
@@ -73,11 +75,13 @@ fun isNetworkError(e: Throwable): Boolean = e is UnknownHostException || e is Co
     e is SSLException || e is InterruptedIOException
 
 /** 사용자에게 보여줄 오류 문구 */
-fun friendlyError(e: Throwable): String = when (e) {
-    is UnknownHostException -> "인터넷에 연결할 수 없어 GitHub 주소를 찾지 못했습니다"
-    is SocketTimeoutException -> "GitHub 응답이 늦어 시간이 초과되었습니다"
-    is ConnectException, is NoRouteToHostException -> "GitHub에 연결하지 못했습니다"
-    is SSLException -> "보안 연결을 만들지 못했습니다 (네트워크 확인 필요)"
-    is GitHubClient.FetchException -> e.message ?: "GitHub 요청 실패"
+fun friendlyError(context: Context, e: Throwable): String = when (e) {
+    is UnknownHostException -> context.getString(R.string.error_no_internet)
+    is SocketTimeoutException -> context.getString(R.string.error_timeout)
+    is ConnectException, is NoRouteToHostException -> context.getString(R.string.error_connect)
+    is SSLException -> context.getString(R.string.error_ssl)
+    is GitHubClient.FetchException -> e.userMessage(context)
+    is GitHubAuth.AuthException -> GitHubAuth.errorMessage(context, e.error, e.description)
+    is GitHubAuth.ServerException -> context.getString(R.string.error_auth_server, e.code)
     else -> e.message ?: e.javaClass.simpleName
 }

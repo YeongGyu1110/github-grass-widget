@@ -6,9 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -21,13 +21,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ghwidget.app.data.PaletteId
 import com.ghwidget.app.data.Settings
 import com.ghwidget.app.data.ThemeMode
+import com.ghwidget.app.R
 import com.ghwidget.app.ui.components.AppButton
 import com.ghwidget.app.ui.components.AppCard
 import com.ghwidget.app.ui.components.AppDivider
@@ -53,15 +55,15 @@ fun WidgetTab(state: HomeState, actions: HomeActions) {
     var previewSize by rememberSaveable { mutableStateOf(PreviewSize.S4x2) }
 
     TabPage {
-        PageHeader("위젯", "홈 화면에 놓일 위젯의 모양을 꾸며요")
+        PageHeader(stringResource(R.string.widget_title), stringResource(R.string.widget_subtitle))
 
         // 미리보기 + 크기 전환
         AppCard {
-            CardHeader("미리보기", "실제 위젯과 같은 방식으로 그립니다")
+            CardHeader(stringResource(R.string.preview_title), stringResource(R.string.preview_subtitle))
             WidgetStage(
                 settings,
                 state.data,
-                if (state.data == null) (state.error ?: "불러오는 중…") else null,
+                if (state.data == null) (state.error ?: stringResource(R.string.loading)) else null,
                 state.systemDark,
                 previewSize,
             )
@@ -74,24 +76,24 @@ fun WidgetTab(state: HomeState, actions: HomeActions) {
 
         // 테마·색상·불투명도
         AppCard {
-            CardHeader("스타일", null)
+            CardHeader(stringResource(R.string.style_title), null)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                FieldLabel("테마")
+                FieldLabel(stringResource(R.string.field_theme))
                 val themes = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK)
                 SegmentedControl(
-                    listOf("시스템", "라이트", "다크"),
+                    listOf(stringResource(R.string.theme_system), stringResource(R.string.theme_light), stringResource(R.string.theme_dark)),
                     themes.indexOf(settings.theme),
                     { update(settings.copy(theme = themes[it])) },
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                FieldLabel("색상")
+                FieldLabel(stringResource(R.string.field_color))
                 PalettePicker(settings.palette) { update(settings.copy(palette = it)) }
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 // 드래그 중에는 화면에서만 바꾸고, 손을 떼면 저장·위젯 반영
                 var opacity by remember(settings.bgOpacity) { mutableFloatStateOf(settings.bgOpacity.toFloat()) }
-                FieldLabel("배경 불투명도", trailing = "${opacity.toInt()}%")
+                FieldLabel(stringResource(R.string.field_bg_opacity), trailing = "${opacity.toInt()}%")
                 AppSlider(
                     value = opacity,
                     onValueChange = { opacity = it },
@@ -110,18 +112,18 @@ fun WidgetTab(state: HomeState, actions: HomeActions) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 IconTile(AppIcons.Smartphone, size = 36.dp)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("홈 화면 위젯", style = MaterialTheme.typography.titleSmall, color = AppTheme.colors.foreground)
-                    Text("런처에서 직접 추가하거나 아래 버튼을 누르세요", style = MaterialTheme.typography.bodySmall,
+                    Text(stringResource(R.string.home_widget_title), style = MaterialTheme.typography.titleSmall, color = AppTheme.colors.foreground)
+                    Text(stringResource(R.string.home_widget_subtitle), style = MaterialTheme.typography.bodySmall,
                         color = AppTheme.colors.mutedForeground)
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Bullet("그래프를 누르면 바로 새로고침합니다.")
-                Bullet("위젯 위쪽 이름 부분을 누르면 이 앱이 열립니다.")
-                Bullet("길게 눌러 크기를 바꾸면 표시 기간이 자동으로 맞춰집니다.")
+                Bullet(stringResource(R.string.widget_tip_refresh))
+                Bullet(stringResource(R.string.widget_tip_open))
+                Bullet(stringResource(R.string.widget_tip_resize))
             }
             if (state.canPinWidget) {
-                AppButton("홈 화면에 위젯 추가", actions.onPinWidget, icon = AppIcons.Plus, modifier = Modifier.fillMaxWidth())
+                AppButton(stringResource(R.string.add_widget), actions.onPinWidget, icon = AppIcons.Plus, modifier = Modifier.fillMaxWidth())
             }
         }
     }
@@ -129,12 +131,12 @@ fun WidgetTab(state: HomeState, actions: HomeActions) {
 
 @Composable
 private fun DisplayGroup(settings: Settings, update: (Settings) -> Unit) {
-    ListGroup("표시 요소") {
-        ListRow("헤더", description = "계정 이름, 최근 1년 기여 수, 연속 기여일", trailing = {
+    ListGroup(stringResource(R.string.display_title)) {
+        ListRow(stringResource(R.string.display_header), description = stringResource(R.string.display_header_desc), trailing = {
             AppSwitch(settings.showHeader) { update(settings.copy(showHeader = it)) }
         })
         AppDivider()
-        ListRow("월 이름", description = "그래프 위에 월을 표시합니다", trailing = {
+        ListRow(stringResource(R.string.display_months), description = stringResource(R.string.display_months_desc), trailing = {
             AppSwitch(settings.showMonths) { update(settings.copy(showMonths = it)) }
         })
     }
@@ -163,7 +165,7 @@ private fun PalettePicker(selected: PaletteId, onSelect: (PaletteId) -> Unit) {
                         Box(Modifier.size(9.dp).clip(RoundedCornerShape(2.dp)).background(Color(levels[lv])))
                     }
                 }
-                Text(p.label, style = MaterialTheme.typography.labelMedium, color = if (isSelected) c.foreground else c.mutedForeground)
+                Text(stringResource(p.label), style = MaterialTheme.typography.labelMedium, color = if (isSelected) c.foreground else c.mutedForeground)
             }
         }
     }

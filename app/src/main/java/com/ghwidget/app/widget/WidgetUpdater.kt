@@ -21,21 +21,34 @@ object WidgetUpdater {
         ids.forEach { update(context, manager, it) }
     }
 
+    /**
+     * 위젯은 그래프가 바뀔 때만 다시 그리므로, 휴대폰 언어나 앱 언어가 바뀌면 직접 다시 그린다.
+     * (휴대폰 언어: LOCALE_CHANGED 방송, 앱 언어(Android 13+): 앱을 다시 열 때)
+     */
+    fun updateIfLocaleChanged(context: Context) {
+        val store = Store(context)
+        val tag = context.resources.configuration.locales[0].toLanguageTag()
+        if (store.widgetLocale == tag) return
+        store.widgetLocale = tag
+        updateAll(context)
+    }
+
     fun update(context: Context, manager: AppWidgetManager, widgetId: Int) {
         val store = Store(context)
         val settings = store.settings()
         val data = store.cachedData()
         val message = when {
-            store.accessToken == null -> store.signOutNotice?.let { "다시 로그인이 필요합니다. 앱을 열어 주세요." }
-                ?: "앱을 열어 GitHub에 로그인하세요"
-            data == null -> store.lastError ?: "불러오는 중…"
+            store.accessToken == null -> context.getString(
+                if (store.signOutNotice != null) R.string.widget_sign_in_again else R.string.widget_sign_in,
+            )
+            data == null -> store.lastError ?: context.getString(R.string.loading)
             else -> null
         }
 
         val (wDp, hDp) = widgetSizeDp(context, manager, widgetId)
         val density = context.resources.displayMetrics.density
         fun draw(dark: Boolean) =
-            GraphRenderer.render(wDp, hDp, density, dark, settings, data, message)
+            GraphRenderer.render(context.resources, wDp, hDp, density, dark, settings, data, message)
 
         val light: android.graphics.Bitmap
         val dark: android.graphics.Bitmap

@@ -1,5 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  기본(영어) 문구. 한국어는 values-ko/strings.xml.
+  GitHub 화면·문서에서 쓰는 표현을 따른다: contributions, "contributions in the last year", Less/More,
+  Sign in / Sign out, OAuth app, device flow, Authorized OAuth Apps, rate limit 등.
+  진단 기록에 남는 내용(DiagLog.log)은 개발용 기록이라 번역하지 않는다.
+-->
 <resources>
-    <string name="app_name">GitHub 잔디</string>
-    <string name="widget_label">GitHub 잔디</string>
-    <string name="widget_description">GitHub contributions 그래프를 홈 화면에 표시합니다</string>
+    <string name="app_name">GitHub Contributions</string>
+    <string name="widget_label">GitHub Contributions</string>
+    <string name="widget_description">Shows your GitHub contribution graph on the home screen</string>
+
+    <!-- 공통 -->
+    <string name="cancel">Cancel</string>
+    <string name="loading">Loading…</string>
+    <string name="checking_account">Checking account…</string>
+    <string name="syncing">Syncing…</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="just_now">just now</string>
+    <string name="profile_image">Profile picture</string>
+    <string name="widget_preview">Widget preview</string>
+    <string name="palette_green">Green</string>
+    <string name="palette_blue">Blue</string>
+    <string name="palette_purple">Purple</string>
+    <string name="palette_orange">Orange</string>
+    <string name="tab_dashboard">Dashboard</string>
+    <string name="tab_widget">Widget</string>
+    <string name="tab_settings">Settings</string>
+    <string name="legend_less">Less</string>
+    <string name="legend_more">More</string>
+
+    <!-- 로그인 전 소개 -->
+    <string name="onboarding_title">Your GitHub contributions,\nright on your home screen</string>
+    <string name="onboarding_body">Sign in to GitHub to show your contribution graph as a widget that keeps itself up to date.</string>
+    <string name="feature_resize_title">Fits any size</string>
+    <string name="feature_resize_desc">Resize the widget and the date range adjusts automatically.</string>
+    <string name="feature_battery_title">Battery-friendly sync</string>
+    <string name="feature_battery_desc">Redraws only when something changes, and takes a break when the battery is low.</string>
+    <string name="feature_readonly_title">Read-only access</string>
+    <string name="feature_readonly_desc">Requests read-only access to public information only. Private repositories stay out of reach.</string>
+    <string name="sign_in_again_title">Please sign in again</string>
+    <string name="preparing">Preparing…</string>
+    <string name="continue_with_github">Continue with GitHub</string>
+    <string name="opens_browser">GitHub\'s authorization page opens in your browser</string>
+    <string name="sign_in_failed">Couldn\'t sign in</string>
+    <string name="enter_code">Enter this code on GitHub</string>
+    <string name="copy_code_open">Copy code and open GitHub</string>
+    <string name="signed_in_after_authorize">You\'ll be signed in automatically once you authorize</string>
+    <string name="login_code_clip_label">GitHub sign-in code</string>
+
+    <!-- 대시보드 -->
+    <string name="dashboard_last_synced">Last synced %1$s · Pull to refresh</string>
+    <string name="no_data_yet">No data yet</string>
+    <string name="sync_failed">Couldn\'t sync</string>
+    <string name="graph_title">Contributions</string>
+    <plurals name="graph_subtitle">
+        <item quantity="one">%1$s contribution in the last year</item>
+        <item quantity="other">%1$s contributions in the last year</item>
+    </plurals>
+    <string name="graph_hint">Tap a square to see that day\'s contributions</string>
+    <string name="day_no_contributions">No contributions</string>
+    <plurals name="day_contributions">
+        <item quantity="one">%1$s contribution</item>
+        <item quantity="other">%1$s contributions</item>
+    </plurals>
+    <string name="stat_last_year">Last year</string>
+    <string name="stat_current_streak">Current streak</string>
+    <string name="stat_longest_streak">Longest streak</string>
+    <string name="stat_best_day">Best day</string>
+    <string name="unit_count"></string>
+    <plurals name="unit_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <string name="stat_daily_average">%1$s per day</string>
+    <string name="stat_today">Today: %1$d</string>
+    <plurals name="stat_active_days">
+        <item quantity="one">%1$d active day</item>
+        <item quantity="other">%1$d active days</item>
+    </plurals>
+    <string name="stat_no_record">None yet</string>
+    <string name="monthly_title">Monthly contributions</string>
+    <string name="monthly_peak">Most active: %1$s · %2$s</string>
+    <string name="monthly_default">Last 12 months</string>
+    <string name="weekday_title">Day of the week</string>
+    <string name="weekday_peak">Most contributions on %1$s</string>
+    <string name="weekday_default">Contributions by day of the week</string>
+    <string name="loading_contributions">Loading contributions…</string>
+
+    <!-- 위젯 탭 -->
+    <string name="widget_title">Widget</string>
+    <string name="widget_subtitle">Customize your home screen widget</string>
+    <string name="preview_title">Preview</string>
+    <string name="preview_subtitle">Drawn the same way as the real widget</string>
+    <string name="style_title">Style</string>
+    <string name="field_theme">Theme</string>
+    <string name="field_color">Color</string>
+    <string name="field_bg_opacity">Background opacity</string>
+    <string name="home_widget_title">Home screen widget</string>
+    <string name="home_widget_subtitle">Add it from your launcher or tap the button below</string>
+    <string name="widget_tip_refresh">Tap the graph to refresh right away.</string>
+    <string name="widget_tip_open">Tap the name at the top of the widget to open this app.</string>
+    <string name="widget_tip_resize">Long-press to resize, and the date range adjusts automatically.</string>
+    <string name="add_widget">Add widget to home screen</string>
+    <string name="display_title">Display</string>
+    <string name="display_header">Header</string>
+    <string name="display_header_desc">Account name, contributions in the last year, current streak</string>
+    <string name="display_months">Month labels</string>
+    <string name="display_months_desc">Show months above the graph</string>
+
+    <!-- 설정 -->
+    <string name="settings_title">Settings</string>
+    <string name="connected">Connected to GitHub</string>
+    <string name="appearance_title">Appearance</string>
+    <string name="appearance_footer">This is the theme for this app. Set the home screen widget\'s theme separately in the Widget tab.</string>
+    <string name="app_theme">App theme</string>
+    <string name="sync_title">Sync</string>
+    <string name="sync_footer">Auto-refresh is skipped when the battery is low, and the widget is redrawn only when the graph changes.</string>
+    <string name="refresh_interval">Auto-refresh interval</string>
+    <string name="refresh_hours">%1$dh</string>
+    <string name="last_synced">Last synced</string>
+    <string name="never">Never</string>
+    <string name="refresh_now">Refresh now</string>
+    <string name="account_title">Account</string>
+    <string name="manage_access">Manage GitHub access</string>
+    <string name="manage_access_desc">Revoke this app\'s access in Authorized OAuth Apps</string>
+    <string name="sign_out">Sign out</string>
+    <string name="about_title">About</string>
+    <string name="version">Version</string>
+    <string name="diagnostics">Diagnostics</string>
+    <string name="diagnostics_desc">Sync, sign-in, and network logs (for troubleshooting)</string>
+    <string name="source_code">Source code</string>
+    <string name="sign_out_confirm_title">Sign out?</string>
+    <string name="sign_out_confirm_body">The token and contribution data stored on this device will be deleted, and the widget will show a sign-in prompt.</string>
+
+    <!-- 진단 기록 화면 (기록 내용 자체는 번역하지 않음) -->
+    <string name="back">Back</string>
+    <string name="diag_summary_filtered">Showing %1$d of %2$d · Newest first</string>
+    <plurals name="diag_summary">
+        <item quantity="one">%1$d entry · Newest first</item>
+        <item quantity="other">%1$d entries · Newest first</item>
+    </plurals>
+    <string name="diag_errors_only">Errors only</string>
+    <string name="diag_all">All</string>
+    <string name="diag_copy_shown">Copy shown</string>
+    <string name="diag_copy">Copy</string>
+    <plurals name="diag_copied">
+        <item quantity="one">Copied %1$d entry</item>
+        <item quantity="other">Copied %1$d entries</item>
+    </plurals>
+    <string name="diag_clear_all">Clear all</string>
+    <string name="diag_empty">No logs yet</string>
+    <string name="diag_empty_filtered">No logs of the selected types</string>
+    <string name="diag_kind_sync">Sync</string>
+    <string name="diag_kind_auth">Sign-in &amp; token</string>
+    <string name="diag_kind_reminder">Reminder</string>
+    <string name="diag_kind_app">App</string>
+    <string name="diag_clip_label">Diagnostics</string>
+
+    <!-- 잔디 알림 설정 -->
+    <string name="reminder_title">Contribution reminder</string>
+    <string name="reminder_footer">You\'re notified only when GitHub shows no contributions for today. Once a contribution shows up, the rest of today\'s reminders are skipped, and you can also stop them with \"Stop for today\" in the notification.</string>
+    <string name="reminder_toggle">Remind me if I haven\'t contributed today</string>
+    <string name="reminder_toggle_off_desc">Get several reminders if today is still empty late in the day</string>
+    <string name="reminder_next_check">Next check: %1$s</string>
+    <string name="reminder_on">On</string>
+    <string name="notif_off_title">Notifications are off</string>
+    <string name="notif_off_body">Allow notifications to get contribution reminders.</string>
+    <string name="open_notification_settings">Open notification settings</string>
+    <string name="reminder_first_time">First reminder</string>
+    <!-- DateTimeFormatter 패턴 -->
+    <string name="reminder_hour_pattern">h a</string>
+    <string name="reminder_interval">Interval</string>
+    <string name="reminder_every_30">Every 30 min</string>
+    <string name="reminder_every_60">Every hour</string>
+    <string name="reminder_times">%1$s (up to %2$d a day)</string>
+    <string name="reminder_preview">Preview notification</string>
+    <!-- 시각 표시 (DateTimeFormatter 패턴) -->
+    <string name="time_pattern">h:mm a</string>
+    <string name="reminder_today_at">Today %1$s</string>
+    <string name="reminder_tomorrow_at">Tomorrow %1$s</string>
+    <string name="reminder_needs_permission">Contribution reminders need notification permission</string>
+    <string name="turn_on_notifications_first">Turn on notifications first</string>
+
+    <!-- 잔디 알림 (알림창) -->
+    <string name="reminder_channel">Contribution reminders</string>
+    <string name="reminder_channel_desc">Notifies you when you haven\'t contributed on GitHub by late in the day</string>
+    <string name="reminder_action_stop">Stop for today</string>
+    <string name="reminder_preview_suffix">%1$s (preview)</string>
+    <string name="left_hm">%1$dh %2$dm</string>
+    <string name="left_m">%1$dm</string>
+    <string name="reminder_at_risk_streak">your %1$d-day streak ends</string>
+    <string name="reminder_at_risk_empty">today stays empty</string>
+    <string name="reminder_last_title">Last reminder: %1$s until midnight 🚨</string>
+    <string name="reminder_last_body">After midnight, %1$s. Make just one commit now!</string>
+    <string name="reminder_soon_title">Almost out of time ⏰</string>
+    <string name="reminder_soon_body">%1$s left until midnight. After that, %2$s.</string>
+    <string name="reminder_first_title">No contributions yet today 🌱</string>
+    <string name="reminder_first_body_streak">You\'ve kept your streak going for %1$d days. One commit keeps it alive today.</string>
+    <string name="reminder_first_body">You haven\'t contributed on GitHub today. One commit fills in today\'s square.</string>
+    <string name="reminder_mid_title">Still no contributions today (%1$d/%2$d)</string>
+    <string name="reminder_mid_body_streak">%1$s left until midnight. One commit keeps your %2$d-day streak going.</string>
+    <string name="reminder_mid_body">%1$s left until midnight. One commit is all it takes to fill in today.</string>
+
+    <!-- 동기화 -->
+    <string name="sync_channel">Sync</string>
+    <string name="sync_notification_title">Syncing GitHub contributions</string>
+
+    <!-- 홈 화면 위젯 -->
+    <string name="widget_refreshing_toast">Refreshing GitHub contributions…</string>
+    <string name="widget_sign_in_again">Sign in again. Open the app.</string>
+    <string name="widget_sign_in">Open the app to sign in to GitHub</string>
+    <plurals name="widget_header_long">
+        <item quantity="one">%1$s contribution in the last year</item>
+        <item quantity="other">%1$s contributions in the last year</item>
+    </plurals>
+    <plurals name="widget_header_short">
+        <item quantity="one">%1$s contribution</item>
+        <item quantity="other">%1$s contributions</item>
+    </plurals>
+    <string name="widget_header_compact">%1$s</string>
+    <string name="widget_header_streak">" · %1$d-day streak"</string>
+
+    <!-- 오류 -->
+    <string name="error_code_expired">The sign-in code expired. Please sign in again.</string>
+    <string name="error_access_denied">Sign-in was denied on GitHub.</string>
+    <string name="error_bad_refresh_token">Your sign-in has expired. Please sign in again.</string>
+    <string name="error_device_flow_disabled">Device flow is disabled in the OAuth app settings.</string>
+    <string name="error_incorrect_client">The OAuth app\'s client ID is incorrect.</string>
+    <string name="error_unknown">Unknown error</string>
+    <string name="error_auth_server">GitHub sign-in server error (HTTP %1$d)</string>
+    <string name="error_not_signed_in">You\'re not signed in</string>
+    <string name="error_token_rejected">GitHub rejected the access token (HTTP 401)</string>
+    <string name="error_refreshed_token_rejected">The refreshed token was also rejected (HTTP 401)</string>
+    <string name="error_no_internet">Couldn\'t reach GitHub. Check your internet connection.</string>
+    <string name="error_timeout">GitHub took too long to respond</string>
+    <string name="error_connect">Couldn\'t connect to GitHub</string>
+    <string name="error_ssl">Couldn\'t create a secure connection (check your network)</string>
+    <string name="error_session_expired">Your sign-in expired. Sign in again in the app.</string>
+    <string name="error_rate_limited">Rate limit reached. Retrying shortly (HTTP %1$d)</string>
+    <string name="error_server">GitHub server error (HTTP %1$d)</string>
+    <string name="error_no_viewer">Couldn\'t get your GitHub account info</string>
+    <string name="error_request_failed">GitHub request failed</string>
 </resources>

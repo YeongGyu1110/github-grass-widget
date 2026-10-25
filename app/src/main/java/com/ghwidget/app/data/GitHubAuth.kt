@@ -1,5 +1,7 @@
 package com.ghwidget.app.data
 
+import android.content.Context
+import com.ghwidget.app.R
 import org.json.JSONObject
 import java.io.IOException
 import java.net.URLEncoder
@@ -59,13 +61,33 @@ object GitHubAuth {
         data object Pending : Poll
         /** 너무 자주 물어봄: 간격을 늘려야 함 */
         data class SlowDown(val interval: Int) : Poll
-        data class Failed(val message: String) : Poll
+        /** error: GitHub 오류 코드 (expired_token 등). 화면에 보일 문구는 errorMessage() */
+        data class Failed(val error: String, val description: String? = null) : Poll
     }
+
+    /** 로그인 서버가 돌려준 오류 (코드를 받을 때) */
+    class AuthException(val error: String, val description: String?) : IOException(error)
+
+    /** 로그인 서버 HTTP 오류 */
+    class ServerException(val code: Int) : IOException("GitHub 로그인 서버 오류 (HTTP $code)")
+
+    /** GitHub 오류 코드 → 화면에 보일 문구 */
+    fun errorMessage(context: Context, error: String, description: String?): String = when (error) {
+        "expired_token" -> context.getString(R.string.error_code_expired)
+        "access_denied" -> context.getString(R.string.error_access_denied)
+        "bad_refresh_token" -> context.getString(R.string.error_bad_refresh_token)
+        "device_flow_disabled" -> context.getString(R.string.error_device_flow_disabled)
+        "incorrect_client_credentials" -> context.getString(R.string.error_incorrect_client)
+        else -> description ?: error.ifEmpty { context.getString(R.string.error_unknown) }
+    }
+
+    private fun failure(o: JSONObject): Pair<String, String?> =
+        o.optString("error") to o.optString("error_description").ifEmpty { null }
 
     fun requestDeviceCode(): DeviceCode {
         val res = postForm("https://github.com/login/device/code", "client_id" to CLIENT_ID, "scope" to "")
         val o = JSONObject(res)
-        if (o.has("error")) throw IOException(describeError(o))
+        if (o.has("error")) failure(o).let { (error, description) -> throw AuthException(error, description) }
         return DeviceCode(
             deviceCode = o.getString("device_code"),
             userCode = o.getString("user_code"),
@@ -91,9 +113,7 @@ object GitHubAuth {
         return when (o.optString("error")) {
             "authorization_pending" -> Poll.Pending
             "slow_down" -> Poll.SlowDown(o.optInt("interval", currentInterval + 5))
-            "expired_token" -> Poll.Failed("로그인 코드가 만료되었습니다. 다시 로그인해 주세요.")
-            "access_denied" -> Poll.Failed("GitHub에서 로그인을 거부했습니다.")
-            else -> Poll.Failed(describeError(o))
+            else -> failure(o).let { (error, description) -> Poll.Failed(error, description) }
         }
     }
 
@@ -112,7 +132,7 @@ object GitHubAuth {
     sealed interface Refresh {
         data class Refreshed(val tokens: TokenSet) : Refresh
         /** refresh token 도 만료·취소됨: 다시 로그인해야 함 */
-        data class Invalid(val message: String) : Refresh
+        data class Invalid(val error: String, val description: String? = null) : Refresh
     }
 
     /**
@@ -132,18 +152,7 @@ object GitHubAuth {
     internal fun parseRefresh(json: String): Refresh {
         val o = JSONObject(json)
         parseTokens(o)?.let { return Refresh.Refreshed(it) }
-        return Refresh.Invalid(
-            when (o.optString("error")) {
-                "bad_refresh_token" -> "로그인 갱신 기한이 지났습니다. 다시 로그인해 주세요."
-                else -> describeError(o)
-            },
-        )
-    }
-
-    private fun describeError(o: JSONObject): String = when (o.optString("error")) {
-        "device_flow_disabled" -> "OAuth App 설정에서 Device Flow가 꺼져 있습니다."
-        "incorrect_client_credentials" -> "OAuth App의 Client ID가 올바르지 않습니다."
-        else -> o.optString("error_description").ifEmpty { o.optString("error", "알 수 없는 오류") }
+        return failure(o).let { (error, description) -> Refresh.Invalid(error, description) }
     }
 
     private fun postForm(url: String, vararg params: Pair<String, String>): String {
@@ -153,7 +162,7 @@ object GitHubAuth {
             "Content-Type" to "application/x-www-form-urlencoded",
         ))
         if (res.code !in 200..299 && !res.body.trimStart().startsWith("{")) {
-            throw IOException("GitHub 로그인 서버 오류 (HTTP ${res.code})")
+            throw ServerException(res.code)
         }
         return res.body
     }

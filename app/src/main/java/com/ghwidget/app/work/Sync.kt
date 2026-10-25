@@ -1,6 +1,7 @@
 package com.ghwidget.app.work
 
 import android.content.Context
+import com.ghwidget.app.R
 import com.ghwidget.app.data.DiagLog
 import com.ghwidget.app.data.GitHubClient
 import com.ghwidget.app.data.Http
@@ -81,7 +82,7 @@ object Sync {
                 is TokenManager.Result.Ok -> try {
                     fetchRetryingNetwork(ctx, t.token)
                 } catch (e2: GitHubClient.FetchException) {
-                    if (e2.unauthorized) signOut(ctx, store, "갱신한 토큰도 거부되었습니다 (HTTP 401)") else throw e2
+                    if (e2.unauthorized) signOut(ctx, store, ctx.getString(R.string.error_refreshed_token_rejected)) else throw e2
                 }
             }
         }
@@ -108,7 +109,7 @@ object Sync {
     private fun failure(
         ctx: Context, store: Store, noCache: Boolean, e: Exception, retryable: Boolean, willRetry: Boolean,
     ): Outcome {
-        val message = friendlyError(e)
+        val message = friendlyError(ctx, e)
         DiagLog.log(
             ctx,
             "동기화 실패: $message [${e.javaClass.simpleName}: ${e.message}] → ${if (retryable && willRetry) "잠시 뒤 재시도" else "재시도 안 함"}",

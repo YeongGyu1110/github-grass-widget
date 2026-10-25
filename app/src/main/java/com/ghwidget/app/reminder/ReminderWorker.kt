@@ -28,7 +28,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
             DiagLog.log(ctx, "잔디 알림 확인: 오늘은 그만 → 건너뜀")
         } else if (!Reminders.isDue(now, settings)) {
             // 작업이 밀려 자정을 넘겼거나 시계가 바뀐 경우: 새 날짜 기준으로는 아직 알릴 때가 아니다
-            DiagLog.log(ctx, "잔디 알림 확인: 알림 시간대가 아님 (${Reminders.describe(now)}) → 건너뜀")
+            DiagLog.log(ctx, "잔디 알림 확인: 알림 시간대가 아님 (${Reminders.describe(ctx, now)}) → 건너뜀")
         } else {
             // 방금 커밋했을 수도 있으니 먼저 최신 데이터를 받는다. 실패하면 저장된 데이터로 판단
             Sync.run(ctx, "잔디 알림 확인")

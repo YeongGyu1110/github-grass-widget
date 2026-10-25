@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import com.ghwidget.app.R
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -96,10 +97,10 @@ object Refresh {
     /** 급한 작업이 포그라운드 서비스로 실행될 때(Android 11 이하) 잠깐 보이는 알림 */
     fun foregroundInfo(context: Context): ForegroundInfo {
         val nm = context.getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, "동기화", NotificationManager.IMPORTANCE_MIN))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL, context.getString(R.string.sync_channel), NotificationManager.IMPORTANCE_MIN))
         val notification = Notification.Builder(context, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setContentTitle("GitHub 잔디 동기화 중")
+            .setContentTitle(context.getString(R.string.sync_notification_title))
             .setOngoing(true)
             .build()
         return ForegroundInfo(1001, notification)

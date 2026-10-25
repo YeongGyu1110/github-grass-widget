@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -19,17 +19,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.ghwidget.app.R
 import com.ghwidget.app.ui.components.AppIcons
 import com.ghwidget.app.ui.components.BottomNavBar
 import com.ghwidget.app.ui.components.NavItem
 import com.ghwidget.app.ui.theme.AppTheme
 
-private val NAV_ITEMS = listOf(
-    NavItem("대시보드", AppIcons.Dashboard),
-    NavItem("위젯", AppIcons.Widget),
-    NavItem("설정", AppIcons.Settings),
-)
 
 /** 로그인 전에는 소개·로그인 화면, 로그인 후에는 하단 탭 3개 */
 @Composable
@@ -50,7 +47,14 @@ fun MainScreen(state: HomeState, actions: HomeActions, initialTab: Tab = Tab.Das
                 Tab.Settings -> SettingsTab(state, actions)
             }
         }
-        BottomNavBar(NAV_ITEMS, tab.ordinal) { tab = Tab.entries[it] }
+        BottomNavBar(
+            listOf(
+                NavItem(stringResource(R.string.tab_dashboard), AppIcons.Dashboard),
+                NavItem(stringResource(R.string.tab_widget), AppIcons.Widget),
+                NavItem(stringResource(R.string.tab_settings), AppIcons.Settings),
+            ),
+            tab.ordinal,
+        ) { tab = Tab.entries[it] }
     }
 }
 

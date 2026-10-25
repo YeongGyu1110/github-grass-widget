@@ -49,15 +49,25 @@ class RenderTest {
         assertEquals(data.days, ContributionData.fromJson(data.toJson()).days)
 
         val base = Settings()
-        save("4x2_light", GraphRenderer.render(330f, 150f, 2.75f, false, base, data, null))
-        save("4x2_dark", GraphRenderer.render(330f, 150f, 2.75f, true, base, data, null))
-        save("4x1_dark_noheader", GraphRenderer.render(330f, 70f, 2.75f, true,
+        val res = RuntimeEnvironment.getApplication().resources
+        save("4x2_light", GraphRenderer.render(res, 330f, 150f, 2.75f, false, base, data, null))
+        save("4x2_dark", GraphRenderer.render(res, 330f, 150f, 2.75f, true, base, data, null))
+        save("4x1_dark_noheader", GraphRenderer.render(res, 330f, 70f, 2.75f, true,
             base.copy(showHeader = false), data, null))
-        save("2x1_light", GraphRenderer.render(160f, 80f, 2.75f, false, base, data, null))
-        save("5x3_purple", GraphRenderer.render(420f, 230f, 2.75f, true,
+        save("2x1_light", GraphRenderer.render(res, 160f, 80f, 2.75f, false, base, data, null))
+        save("5x3_purple", GraphRenderer.render(res, 420f, 230f, 2.75f, true,
             base.copy(palette = PaletteId.PURPLE, bgOpacity = 60), data, null))
-        save("message", GraphRenderer.render(330f, 150f, 2.75f, false,
-            base, null, "앱을 열어 GitHub에 로그인하세요"))
+        save("message", GraphRenderer.render(res, 330f, 150f, 2.75f, false,
+            base, null, res.getString(R.string.widget_sign_in)))
+    }
+
+    /** 한국어 기기에서의 위젯 헤더 */
+    @Test
+    @Config(qualifiers = "ko")
+    fun renderKorean() {
+        val res = RuntimeEnvironment.getApplication().resources
+        save("4x2_light_ko", GraphRenderer.render(res, 330f, 150f, 2.75f, false, Settings(), sampleData(), null))
+        save("2x1_light_ko", GraphRenderer.render(res, 160f, 80f, 2.75f, false, Settings(), sampleData(), null))
     }
 
     /** 앱 아이콘(적응형)과 테마 아이콘용 단색 그림을 둥근 사각형 마스크로 그려 본다 */

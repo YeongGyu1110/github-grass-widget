@@ -1,5 +1,6 @@
 package com.ghwidget.app.widget
 
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -8,6 +9,7 @@ import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import com.ghwidget.app.R
 import com.ghwidget.app.data.ContributionData
 import com.ghwidget.app.data.Settings
 import java.text.NumberFormat
@@ -40,6 +42,7 @@ object GraphRenderer {
     private const val MAX_PIXELS = 1_200_000f
 
     fun render(
+        res: Resources,
         widthDp: Float,
         heightDp: Float,
         density: Float,
@@ -77,12 +80,12 @@ object GraphRenderer {
         val text = TextPaint(Paint.ANTI_ALIAS_FLAG)
 
         if (settings.showHeader && data != null) {
-            drawHeader(canvas, text, pal, d, left, right, top, data.username, data)
+            drawHeader(res, canvas, text, pal, d, left, right, top, data.username, data)
             top += (HEADER_H + HEADER_GAP) * d
         }
 
         if (data == null || data.days.isEmpty()) {
-            drawMessage(canvas, text, pal, d, left, top, right, bottom, message ?: "불러오는 중…")
+            drawMessage(canvas, text, pal, d, left, top, right, bottom, message ?: res.getString(R.string.loading))
             return bmp
         }
 
@@ -91,6 +94,7 @@ object GraphRenderer {
     }
 
     private fun drawHeader(
+        res: Resources,
         canvas: Canvas, text: TextPaint, pal: Palette, d: Float,
         left: Float, right: Float, top: Float, username: String, data: ContributionData?,
     ) {
@@ -104,12 +108,15 @@ object GraphRenderer {
         if (data != null) {
             val nf = NumberFormat.getIntegerInstance()
             val total = nf.format(data.total)
-            val streak = data.currentStreak().let { if (it > 0) " · 연속 ${it}일" else "" }
+            val streak = data.currentStreak().let { if (it > 0) res.getString(R.string.widget_header_streak, it) else "" }
+            val short = res.getQuantityString(R.plurals.widget_header_short, data.total, total)
             val maxRight = (right - left) * 0.62f
+            // 자리가 모자라면 짧은 문구로
             rightText = listOf(
-                "최근 1년 ${total}회$streak",
-                "${total}회$streak",
-                "${total}회",
+                res.getQuantityString(R.plurals.widget_header_long, data.total, total) + streak,
+                short + streak,
+                short,
+                res.getString(R.string.widget_header_compact, total),
             ).firstOrNull { text.measureText(it) <= maxRight } ?: ""
             rightW = text.measureText(rightText)
             canvas.drawText(rightText, right - rightW, baseline, text)

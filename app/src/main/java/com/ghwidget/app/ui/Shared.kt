@@ -1,17 +1,19 @@
 package com.ghwidget.app.ui
 
+import android.content.Context
 import android.text.format.DateUtils
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
+import androidx.annotation.PluralsRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,25 +22,29 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.ghwidget.app.data.ContributionData
 import com.ghwidget.app.data.ContributionDay
 import com.ghwidget.app.data.PaletteId
 import com.ghwidget.app.data.Settings
 import com.ghwidget.app.data.ThemeMode
+import com.ghwidget.app.R
 import com.ghwidget.app.ui.theme.AppTheme
 import com.ghwidget.app.ui.theme.Radius
 import com.ghwidget.app.widget.GraphRenderer
@@ -79,7 +85,7 @@ fun Avatar(login: String?, image: ImageBitmap? = null, size: Dp = 40.dp) {
         contentAlignment = Alignment.Center,
     ) {
         if (image != null) {
-            Image(image, contentDescription = "프로필 이미지", contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize().clip(CircleShape))
+            Image(image, contentDescription = stringResource(R.string.profile_image), contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize().clip(CircleShape))
             return@Box
         }
         Text(
@@ -117,8 +123,9 @@ fun WidgetStage(
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
-    val bmp = remember(settings, data, message, dark, density, size) {
-        GraphRenderer.render(size.widthDp, size.heightDp, density, dark, settings, data, message).asImageBitmap()
+    val res = LocalContext.current.resources
+    val bmp = remember(settings, data, message, dark, density, size, res) {
+        GraphRenderer.render(res, size.widthDp, size.heightDp, density, dark, settings, data, message).asImageBitmap()
     }
     val wallpaper = if (c.isDark) listOf(Color(0xFF1C1D23), Color(0xFF2A2B33)) else listOf(Color(0xFFE1E6EC), Color(0xFFF1F4F7))
     Column(
@@ -132,7 +139,7 @@ fun WidgetStage(
     ) {
         Image(
             bitmap = bmp,
-            contentDescription = "위젯 미리보기",
+            contentDescription = stringResource(R.string.widget_preview),
             modifier = Modifier
                 .fillMaxWidth(size.widthDp / PreviewSize.S5x3.widthDp)
                 .aspectRatio(size.widthDp / size.heightDp),
@@ -151,10 +158,17 @@ fun WidgetStage(
     }
 }
 
-fun relativeTime(epochMs: Long): String {
+/** 복수형 문자열 (영어 1 contribution / 2 contributions). 한국어는 항상 같은 형태 */
+@Composable
+fun pluralResource(@PluralsRes id: Int, count: Int, vararg args: Any): String {
+    LocalConfiguration.current // 언어가 바뀌면 다시 그리도록
+    return LocalContext.current.resources.getQuantityString(id, count, *args)
+}
+
+fun relativeTime(context: Context, epochMs: Long): String {
     val now = System.currentTimeMillis()
     // 1분 안쪽은 "0분 전" 대신 "방금 전"
-    if (now - epochMs in 0 until DateUtils.MINUTE_IN_MILLIS) return "방금 전"
+    if (now - epochMs in 0 until DateUtils.MINUTE_IN_MILLIS) return context.getString(R.string.just_now)
     return DateUtils.getRelativeTimeSpanString(epochMs, now, DateUtils.MINUTE_IN_MILLIS).toString()
 }
 

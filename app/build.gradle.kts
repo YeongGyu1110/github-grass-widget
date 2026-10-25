@@ -13,8 +13,8 @@ android {
         applicationId = "com.ghwidget.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.7.3"
+        versionCode = 16
+        versionName = "1.8.0"
     }
 
     buildTypes {
@@ -30,6 +30,10 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    androidResources {
+        // 휴대폰 설정에서 이 앱만 언어를 고를 수 있게 (Android 13+). 기본 리소스(values)는 영어
+        generateLocaleConfig = true
     }
     testOptions {
         unitTests.isIncludeAndroidResources = true

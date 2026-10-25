@@ -1,19 +1,19 @@
 package com.ghwidget.app.ui.charts
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,7 +24,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -32,22 +31,25 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ghwidget.app.data.ContributionData
 import com.ghwidget.app.data.ContributionDay
+import com.ghwidget.app.R
 import com.ghwidget.app.ui.theme.AppTheme
-import kotlinx.coroutines.flow.first
 import java.time.DayOfWeek
-import java.time.LocalDate
-import java.time.YearMonth
 import java.time.format.TextStyle as JTextStyle
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import java.time.YearMonth
 import java.util.Locale
+import kotlinx.coroutines.flow.first
 
 private fun weekStart(date: LocalDate): LocalDate = date.minusDays((date.dayOfWeek.value % 7).toLong())
 
@@ -163,11 +165,11 @@ fun ContributionHeatmap(
 fun HeatmapLegend(levels: IntArray) {
     val c = AppTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text("적음", style = MaterialTheme.typography.labelSmall, color = c.mutedForeground)
+        Text(stringResource(R.string.legend_less), style = MaterialTheme.typography.labelSmall, color = c.mutedForeground)
         Spacer(Modifier.width(2.dp))
         levels.forEach { Box(Modifier.size(10.dp).clip(RoundedCornerShape(2.dp)).background(Color(it))) }
         Spacer(Modifier.width(2.dp))
-        Text("많음", style = MaterialTheme.typography.labelSmall, color = c.mutedForeground)
+        Text(stringResource(R.string.legend_more), style = MaterialTheme.typography.labelSmall, color = c.mutedForeground)
     }
 }
 
@@ -204,7 +206,7 @@ fun MonthlyBars(monthly: List<Pair<YearMonth, Int>>, barColor: Color, highlightC
                 val t = measurer.measure(value.toString(), valueStyle)
                 drawText(t, topLeft = Offset(x + barW / 2 - t.size.width / 2, y - t.size.height - 2.dp.toPx()))
             }
-            val label = measurer.measure("${ym.monthValue}월", labelStyle)
+            val label = measurer.measure(ym.month.getDisplayName(JTextStyle.SHORT, Locale.getDefault()), labelStyle)
             drawText(label, topLeft = Offset(i * slot + slot / 2 - label.size.width / 2, size.height - label.size.height))
         }
     }

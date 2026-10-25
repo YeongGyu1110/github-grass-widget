@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
+import com.ghwidget.app.R
 import com.ghwidget.app.data.Store
 import com.ghwidget.app.work.Refresh
 
@@ -19,8 +20,12 @@ class ContributionWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == ACTION_REFRESH) {
-            Toast.makeText(context, "GitHub 잔디 새로고침 중…", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.widget_refreshing_toast, Toast.LENGTH_SHORT).show()
             Refresh.now(context, "위젯 그래프 누름")
+            return
+        }
+        if (intent.action == Intent.ACTION_LOCALE_CHANGED) {
+            WidgetUpdater.updateIfLocaleChanged(context)
             return
         }
         super.onReceive(context, intent)

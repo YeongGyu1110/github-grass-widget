@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
+import androidx.annotation.StringRes
+import com.ghwidget.app.R
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -13,6 +15,7 @@ import java.util.Locale
  * 진단 기록: 동기화·로그인·토큰 갱신·네트워크 오류 같은 사건을 파일에 남긴다.
  * 설정 → 진단 기록에서 볼 수 있고, logcat 에도 "GhWidget" 태그로 같이 찍힌다.
  * 토큰 값 같은 비밀 정보는 절대 남기지 않는다.
+ * 기록 내용은 개발용이라 번역하지 않는다 (종류 분류도 이 문구에 기대고 있다).
  */
 object DiagLog {
     private const val FILE = "diagnostics.log"
@@ -37,7 +40,9 @@ object DiagLog {
     }
 
     /** 기록 종류 (진단 기록 화면에서 골라 보기용) */
-    enum class Kind(val label: String) { SYNC("동기화"), AUTH("로그인·토큰"), REMINDER("잔디 알림"), APP("앱") }
+    enum class Kind(@StringRes val label: Int) {
+        SYNC(R.string.diag_kind_sync), AUTH(R.string.diag_kind_auth), REMINDER(R.string.diag_kind_reminder), APP(R.string.diag_kind_app)
+    }
 
     data class Entry(val time: String, val message: String) {
         val kind: Kind get() = kindOf(message)

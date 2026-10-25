@@ -8,10 +8,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -24,23 +24,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ghwidget.app.data.DiagLog
 import com.ghwidget.app.data.ThemeMode
+import com.ghwidget.app.R
 import com.ghwidget.app.reminder.Reminders
 import com.ghwidget.app.ui.components.Alert
-import com.ghwidget.app.ui.components.AppSwitch
 import com.ghwidget.app.ui.components.AppButton
 import com.ghwidget.app.ui.components.AppCard
 import com.ghwidget.app.ui.components.AppDivider
 import com.ghwidget.app.ui.components.AppIconButton
 import com.ghwidget.app.ui.components.AppIcons
+import com.ghwidget.app.ui.components.AppSwitch
 import com.ghwidget.app.ui.components.BadgeTone
 import com.ghwidget.app.ui.components.ButtonVariant
 import com.ghwidget.app.ui.components.ListGroup
@@ -51,6 +53,8 @@ import com.ghwidget.app.ui.components.Spinner
 import com.ghwidget.app.ui.components.StatusBadge
 import com.ghwidget.app.ui.theme.AppTheme
 import com.ghwidget.app.ui.theme.Radius
+import java.time.format.DateTimeFormatter
+import java.time.LocalTime
 
 private val REFRESH_HOURS = listOf(1, 3, 6, 12, 24)
 
@@ -67,25 +71,25 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
     }
 
     TabPage {
-        PageHeader("설정")
+        PageHeader(stringResource(R.string.settings_title))
 
         // 프로필
         AppCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Avatar(login, state.avatar, size = 48.dp)
                 Column(Modifier.weight(1f).padding(start = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(login?.let { "@$it" } ?: "계정 확인 중…", style = MaterialTheme.typography.titleMedium, color = c.foreground)
-                    StatusBadge("GitHub 연결됨", BadgeTone.Success)
+                    Text(login?.let { "@$it" } ?: stringResource(R.string.checking_account), style = MaterialTheme.typography.titleMedium, color = c.foreground)
+                    StatusBadge(stringResource(R.string.connected), BadgeTone.Success)
                 }
             }
         }
 
-        ListGroup("화면", footer = "이 앱의 테마입니다. 홈 화면 위젯의 테마는 위젯 탭에서 따로 정합니다.") {
+        ListGroup(stringResource(R.string.appearance_title), footer = stringResource(R.string.appearance_footer)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("앱 테마", style = MaterialTheme.typography.titleSmall, color = c.foreground)
+                Text(stringResource(R.string.app_theme), style = MaterialTheme.typography.titleSmall, color = c.foreground)
                 val themes = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK)
                 SegmentedControl(
-                    listOf("시스템", "라이트", "다크"),
+                    listOf(stringResource(R.string.theme_system), stringResource(R.string.theme_light), stringResource(R.string.theme_dark)),
                     themes.indexOf(state.settings.appTheme),
                     { actions.onSettingsChange(state.settings.copy(appTheme = themes[it])) },
                 )
@@ -94,28 +98,28 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
 
         ReminderGroup(state, actions)
 
-        ListGroup("동기화", footer = "배터리가 부족하면 자동 새로고침을 건너뛰고, 그래프가 바뀌지 않으면 위젯을 다시 그리지 않습니다.") {
+        ListGroup(stringResource(R.string.sync_title), footer = stringResource(R.string.sync_footer)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("자동 새로고침 간격", style = MaterialTheme.typography.titleSmall, color = c.foreground)
+                Text(stringResource(R.string.refresh_interval), style = MaterialTheme.typography.titleSmall, color = c.foreground)
                 SegmentedControl(
-                    REFRESH_HOURS.map { "${it}시간" },
+                    REFRESH_HOURS.map { stringResource(R.string.refresh_hours, it) },
                     REFRESH_HOURS.indexOf(state.settings.refreshHours).coerceAtLeast(0),
                     { actions.onSettingsChange(state.settings.copy(refreshHours = REFRESH_HOURS[it])) },
                 )
             }
             AppDivider()
             ListRow(
-                "마지막 동기화",
+                stringResource(R.string.last_synced),
                 icon = AppIcons.Clock,
                 value = when {
-                    state.refreshing -> "동기화 중…"
-                    state.data != null -> relativeTime(state.data.fetchedAt)
-                    else -> "없음"
+                    state.refreshing -> stringResource(R.string.syncing)
+                    state.data != null -> relativeTime(LocalContext.current, state.data.fetchedAt)
+                    else -> stringResource(R.string.never)
                 },
             )
             AppDivider()
             ListRow(
-                "지금 새로고침",
+                stringResource(R.string.refresh_now),
                 icon = AppIcons.Refresh,
                 onClick = actions.onRefresh.takeIf { !state.refreshing },
                 trailing = if (state.refreshing) ({ Spinner(size = 14.dp) }) else null,
@@ -123,31 +127,31 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
             )
         }
 
-        ListGroup("계정") {
+        ListGroup(stringResource(R.string.account_title)) {
             ListRow(
-                "GitHub 권한 관리",
+                stringResource(R.string.manage_access),
                 icon = AppIcons.Key,
-                description = "Authorized OAuth Apps에서 이 앱의 접근을 해제할 수 있어요",
+                description = stringResource(R.string.manage_access_desc),
                 showChevron = true,
                 onClick = { actions.onOpenUrl(GITHUB_APPS_URL) },
             )
             AppDivider()
-            ListRow("로그아웃", icon = AppIcons.LogOut, destructive = true, onClick = { confirmSignOut = true })
+            ListRow(stringResource(R.string.sign_out), icon = AppIcons.LogOut, destructive = true, onClick = { confirmSignOut = true })
         }
 
-        ListGroup("정보") {
-            ListRow("버전", icon = AppIcons.Info, value = state.versionName.ifEmpty { "-" })
+        ListGroup(stringResource(R.string.about_title)) {
+            ListRow(stringResource(R.string.version), icon = AppIcons.Info, value = state.versionName.ifEmpty { "-" })
             AppDivider()
             ListRow(
-                "진단 기록",
+                stringResource(R.string.diagnostics),
                 icon = AppIcons.Activity,
-                description = "동기화·로그인·네트워크 기록 (문제 원인 확인용)",
+                description = stringResource(R.string.diagnostics_desc),
                 showChevron = true,
                 onClick = { showDiagnostics = true },
             )
             AppDivider()
             ListRow(
-                "소스 코드",
+                stringResource(R.string.source_code),
                 icon = AppIcons.Github,
                 description = "YeongGyu1110/github-grass-widget",
                 showChevron = true,
@@ -161,19 +165,19 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
             onDismissRequest = { confirmSignOut = false },
             containerColor = c.card,
             shape = Radius.card,
-            title = { Text("로그아웃할까요?", style = MaterialTheme.typography.titleMedium, color = c.foreground) },
+            title = { Text(stringResource(R.string.sign_out_confirm_title), style = MaterialTheme.typography.titleMedium, color = c.foreground) },
             text = {
                 Text(
-                    "이 기기에 저장된 토큰과 기여 데이터가 삭제되고, 위젯에는 로그인 안내가 표시됩니다.",
+                    stringResource(R.string.sign_out_confirm_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = c.mutedForeground,
                 )
             },
             confirmButton = {
-                AppButton("로그아웃", { confirmSignOut = false; actions.onSignOut() }, destructive = true)
+                AppButton(stringResource(R.string.sign_out), { confirmSignOut = false; actions.onSignOut() }, destructive = true)
             },
             dismissButton = {
-                AppButton("취소", { confirmSignOut = false }, variant = ButtonVariant.Outline)
+                AppButton(stringResource(R.string.cancel), { confirmSignOut = false }, variant = ButtonVariant.Outline)
             },
         )
     }
@@ -203,34 +207,34 @@ private fun DiagnosticsPage(actions: HomeActions, onBack: () -> Unit) {
 
     TabPage {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-            AppIconButton(AppIcons.ChevronLeft, "뒤로", onBack)
+            AppIconButton(AppIcons.ChevronLeft, stringResource(R.string.back), onBack)
             Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("진단 기록", style = MaterialTheme.typography.headlineSmall, color = c.foreground)
+                Text(stringResource(R.string.diagnostics), style = MaterialTheme.typography.headlineSmall, color = c.foreground)
                 Text(
-                    if (filtered) "${shown.size}건 표시 · 전체 ${entries.size}건 · 최신순" else "최근 ${entries.size}건 · 최신순",
+                    if (filtered) stringResource(R.string.diag_summary_filtered, shown.size, entries.size) else pluralResource(R.plurals.diag_summary, entries.size, entries.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = c.mutedForeground,
                 )
             }
             FilterChip(
-                "오류만", ofKinds.count { it.isError }, selected = errorsOnly,
+                stringResource(R.string.diag_errors_only), ofKinds.count { it.isError }, selected = errorsOnly,
                 destructive = true, icon = AppIcons.AlertCircle,
             ) { errorsOnly = !errorsOnly }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            FilterChip("전체", ofSeverity.size, selected = kinds.isEmpty()) { kinds = emptySet() }
+            FilterChip(stringResource(R.string.diag_all), ofSeverity.size, selected = kinds.isEmpty()) { kinds = emptySet() }
             DiagLog.Kind.entries.forEach { kind ->
-                FilterChip(kind.label, ofSeverity.count { it.kind == kind }, selected = kind in kinds) {
+                FilterChip(stringResource(kind.label), ofSeverity.count { it.kind == kind }, selected = kind in kinds) {
                     kinds = if (kind in kinds) kinds - kind else kinds + kind
                 }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AppButton(
-                if (filtered) "보이는 기록 복사" else "복사",
+                if (filtered) stringResource(R.string.diag_copy_shown) else stringResource(R.string.diag_copy),
                 {
                     actions.onCopyDiagnostics(shown.reversed().joinToString("\n") { it.line })
-                    Toast.makeText(context, "진단 기록 ${shown.size}건을 복사했습니다", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.resources.getQuantityString(R.plurals.diag_copied, shown.size, shown.size), Toast.LENGTH_SHORT).show()
                 },
                 variant = ButtonVariant.Outline,
                 icon = AppIcons.Copy,
@@ -238,7 +242,7 @@ private fun DiagnosticsPage(actions: HomeActions, onBack: () -> Unit) {
                 modifier = Modifier.weight(1f),
             )
             AppButton(
-                "모두 지우기",
+                stringResource(R.string.diag_clear_all),
                 { actions.onClearDiagnostics(); entries = emptyList() },
                 variant = ButtonVariant.Outline,
                 destructive = true,
@@ -249,7 +253,7 @@ private fun DiagnosticsPage(actions: HomeActions, onBack: () -> Unit) {
         AppCard {
             if (shown.isEmpty()) {
                 Text(
-                    if (entries.isEmpty()) "아직 기록이 없습니다" else "고른 종류의 기록이 없습니다",
+                    if (entries.isEmpty()) stringResource(R.string.diag_empty) else stringResource(R.string.diag_empty_filtered),
                     style = MaterialTheme.typography.bodySmall,
                     color = c.mutedForeground,
                 )
@@ -268,7 +272,7 @@ private fun DiagnosticsEntry(entry: DiagLog.Entry) {
     val c = AppTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
         Text(
-            "${entry.time}  ·  ${entry.kind.label}",
+            "${entry.time}  ·  ${stringResource(entry.kind.label)}",
             fontFamily = FontFamily.Monospace,
             fontSize = 10.sp,
             lineHeight = 13.sp,
@@ -323,18 +327,22 @@ private fun ReminderGroup(state: HomeState, actions: HomeActions) {
     val c = AppTheme.colors
     val s = state.settings
     ListGroup(
-        "잔디 알림",
-        footer = "GitHub에서 오늘 기여가 0건일 때만 알려요. 커밋이 확인되면 그날 남은 알림은 보내지 않고, 알림의 '오늘은 그만'으로 멈출 수도 있어요.",
+        stringResource(R.string.reminder_title),
+        footer = stringResource(R.string.reminder_footer),
     ) {
         ListRow(
-            "오늘 기여가 없으면 알림",
+            stringResource(R.string.reminder_toggle),
             icon = AppIcons.Bell,
             description = when {
-                !s.reminderEnabled -> "늦은 시간까지 잔디가 비어 있으면 여러 번 나눠 알려 드려요"
-                state.reminderNextAt > 0 -> "다음 확인: ${Reminders.describe(
-                    java.time.Instant.ofEpochMilli(state.reminderNextAt).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),
-                )}"
-                else -> "켜짐"
+                !s.reminderEnabled -> stringResource(R.string.reminder_toggle_off_desc)
+                state.reminderNextAt > 0 -> stringResource(
+                    R.string.reminder_next_check,
+                    Reminders.describe(
+                        LocalContext.current,
+                        java.time.Instant.ofEpochMilli(state.reminderNextAt).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),
+                    ),
+                )
+                else -> stringResource(R.string.reminder_on)
             },
             trailing = { AppSwitch(s.reminderEnabled) { actions.onReminderToggle(it) } },
         )
@@ -342,33 +350,36 @@ private fun ReminderGroup(state: HomeState, actions: HomeActions) {
             if (!state.notificationsAllowed) {
                 AppDivider()
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Alert("알림 권한이 꺼져 있어요", "권한을 켜야 잔디 알림을 받을 수 있어요.")
-                    AppButton("알림 설정 열기", actions.onOpenNotificationSettings, variant = ButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
+                    Alert(stringResource(R.string.notif_off_title), stringResource(R.string.notif_off_body))
+                    AppButton(stringResource(R.string.open_notification_settings), actions.onOpenNotificationSettings, variant = ButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
                 }
             }
             AppDivider()
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("첫 알림 시각", style = MaterialTheme.typography.titleSmall, color = c.foreground)
+                // 시각 표시는 언어에 맞게 (한국어: 21시, 영어: 9 PM)
+                val hourFormat = DateTimeFormatter.ofPattern(stringResource(R.string.reminder_hour_pattern))
+                Text(stringResource(R.string.reminder_first_time), style = MaterialTheme.typography.titleSmall, color = c.foreground)
                 SegmentedControl(
-                    REMINDER_HOURS.map { "${it}시" },
+                    REMINDER_HOURS.map { LocalTime.of(it, 0).format(hourFormat) },
                     REMINDER_HOURS.indexOf(s.reminderStartHour).coerceAtLeast(0),
                     { actions.onSettingsChange(s.copy(reminderStartHour = REMINDER_HOURS[it])) },
                 )
-                Text("간격", style = MaterialTheme.typography.titleSmall, color = c.foreground)
+                Text(stringResource(R.string.reminder_interval), style = MaterialTheme.typography.titleSmall, color = c.foreground)
                 SegmentedControl(
-                    listOf("30분마다", "1시간마다"),
+                    listOf(stringResource(R.string.reminder_every_30), stringResource(R.string.reminder_every_60)),
                     REMINDER_INTERVALS.indexOf(s.reminderIntervalMin).coerceAtLeast(0),
                     { actions.onSettingsChange(s.copy(reminderIntervalMin = REMINDER_INTERVALS[it])) },
                 )
-                val times = Reminders.slots(java.time.LocalDate.now(), s).map { it.toLocalTime().toString() }
+                val timeFormat = Reminders.timeFormat(LocalContext.current)
+                val times = Reminders.slots(java.time.LocalDate.now(), s).map { it.format(timeFormat) }
                 Text(
-                    "${times.joinToString(" · ")} (하루 최대 ${times.size}번)",
+                    stringResource(R.string.reminder_times, times.joinToString(" · "), times.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = c.mutedForeground,
                 )
             }
             AppDivider()
-            ListRow("알림 미리 보기", icon = AppIcons.Bell, showChevron = true, onClick = actions.onPreviewReminder)
+            ListRow(stringResource(R.string.reminder_preview), icon = AppIcons.Bell, showChevron = true, onClick = actions.onPreviewReminder)
         }
     }
 }

@@ -41,7 +41,7 @@ import kotlin.random.Random
  * 화면 전체가 한 장에 담기도록 세로로 긴 창에서 그린다.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "w400dp-h1700dp-xhdpi")
+@Config(sdk = [34], qualifiers = "ko-w400dp-h1700dp-xhdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class HomeScreenshotTest {
 
@@ -80,7 +80,7 @@ class HomeScreenshotTest {
         data = null,
         error = null,
         refreshing = false,
-        versionName = "v1.7.3",
+        versionName = "v1.8.0",
     )
 
     @Test fun signedInLight() = shoot("signed_in_light", false,
@@ -110,6 +110,32 @@ class HomeScreenshotTest {
         base.copy(account = Account.SignedIn("octocat"), data = sampleData()), Tab.Settings)
 
     @Test fun settingsReminderLight() = shoot("settings_reminder_light", false,
+        base.copy(
+            account = Account.SignedIn("octocat"), data = sampleData(),
+            settings = Settings(reminderEnabled = true, reminderStartHour = 21, reminderIntervalMin = 30),
+            reminderNextAt = System.currentTimeMillis() + 3_600_000L,
+        ),
+        Tab.Settings,
+    )
+
+    // 영어 기기
+    @Test @Config(qualifiers = "en-w400dp-h1700dp-xhdpi")
+    fun signedInLightEnglish() = shoot("en_signed_in_light", false,
+        base.copy(account = Account.SignedIn("octocat"), data = sampleData()))
+
+    @Test @Config(qualifiers = "en-w400dp-h1700dp-xhdpi")
+    fun signedOutEnglish() = shoot("en_signed_out_light", false, base)
+
+    @Test @Config(qualifiers = "en-w400dp-h1700dp-xhdpi")
+    fun pendingEnglish() = shoot("en_pending_dark", true,
+        base.copy(account = Account.Pending(GitHubAuth.DeviceCode("dc", "6AEC-C38C", "https://github.com/login/device", 5, Long.MAX_VALUE))))
+
+    @Test @Config(qualifiers = "en-w400dp-h1700dp-xhdpi")
+    fun widgetTabEnglish() = shoot("en_widget_light", false,
+        base.copy(account = Account.SignedIn("octocat"), data = sampleData()), Tab.Widget)
+
+    @Test @Config(qualifiers = "en-w400dp-h1700dp-xhdpi")
+    fun settingsReminderEnglish() = shoot("en_settings_reminder_light", false,
         base.copy(
             account = Account.SignedIn("octocat"), data = sampleData(),
             settings = Settings(reminderEnabled = true, reminderStartHour = 21, reminderIntervalMin = 30),

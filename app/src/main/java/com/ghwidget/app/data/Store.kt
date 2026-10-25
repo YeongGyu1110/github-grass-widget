@@ -1,13 +1,15 @@
 package com.ghwidget.app.data
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.core.content.edit
+import com.ghwidget.app.R
 import java.io.File
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
-enum class PaletteId(val label: String) {
-    GREEN("그린"), BLUE("블루"), PURPLE("퍼플"), ORANGE("오렌지")
+enum class PaletteId(@StringRes val label: Int) {
+    GREEN(R.string.palette_green), BLUE(R.string.palette_blue), PURPLE(R.string.palette_purple), ORANGE(R.string.palette_orange)
 }
 
 /** 위젯 모양·동작 설정 */
@@ -190,6 +192,11 @@ class Store(context: Context) {
     var reminderMutedDate: String?
         get() = prefs.getString("reminderMutedDate", null)
         set(v) = prefs.edit { putString("reminderMutedDate", v) }
+
+    /** 위젯을 마지막으로 그린 언어 (언어가 바뀌면 다시 그리기 위해) */
+    var widgetLocale: String?
+        get() = prefs.getString("widgetLocale", null)
+        set(v) = prefs.edit { putString("widgetLocale", v) }
 
     var lastAttemptAt: Long
         get() = prefs.getLong("lastAttemptAt", 0L)

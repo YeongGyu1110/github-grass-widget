@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 한국어 문구. 기본(영어)은 values/strings.xml -->
+<resources>
+    <string name="app_name">GitHub 잔디</string>
+    <string name="widget_label">GitHub 잔디</string>
+    <string name="widget_description">GitHub contributions 그래프를 홈 화면에 표시합니다</string>
+
+    <!-- 공통 -->
+    <string name="cancel">취소</string>
+    <string name="loading">불러오는 중…</string>
+    <string name="checking_account">계정 확인 중…</string>
+    <string name="syncing">동기화 중…</string>
+    <string name="theme_system">시스템</string>
+    <string name="theme_light">라이트</string>
+    <string name="theme_dark">다크</string>
+    <string name="just_now">방금 전</string>
+    <string name="profile_image">프로필 이미지</string>
+    <string name="widget_preview">위젯 미리보기</string>
+    <string name="palette_green">그린</string>
+    <string name="palette_blue">블루</string>
+    <string name="palette_purple">퍼플</string>
+    <string name="palette_orange">오렌지</string>
+    <string name="tab_dashboard">대시보드</string>
+    <string name="tab_widget">위젯</string>
+    <string name="tab_settings">설정</string>
+    <string name="legend_less">적음</string>
+    <string name="legend_more">많음</string>
+
+    <!-- 로그인 전 소개 -->
+    <string name="onboarding_title">내 GitHub 잔디를\n홈 화면에서 바로</string>
+    <string name="onboarding_body">GitHub에 로그인하면 기여 그래프를 위젯으로 보여주고, 알아서 최신 상태로 유지합니다.</string>
+    <string name="feature_resize_title">크기에 맞춰 자동 조절</string>
+    <string name="feature_resize_desc">위젯 크기를 바꾸면 보여주는 기간이 알아서 맞춰집니다.</string>
+    <string name="feature_battery_title">배터리 걱정 없는 동기화</string>
+    <string name="feature_battery_desc">변경이 있을 때만 다시 그리고, 배터리가 부족하면 쉬어갑니다.</string>
+    <string name="feature_readonly_title">읽기 전용 권한</string>
+    <string name="feature_readonly_desc">공개 정보 읽기 권한만 요청합니다. 저장소에는 접근하지 않습니다.</string>
+    <string name="sign_in_again_title">다시 로그인이 필요해요</string>
+    <string name="preparing">준비 중…</string>
+    <string name="continue_with_github">GitHub로 계속하기</string>
+    <string name="opens_browser">브라우저에서 GitHub 승인 페이지가 열립니다</string>
+    <string name="sign_in_failed">로그인하지 못했습니다</string>
+    <string name="enter_code">GitHub에서 아래 코드를 입력하세요</string>
+    <string name="copy_code_open">코드 복사하고 GitHub 열기</string>
+    <string name="signed_in_after_authorize">승인하면 자동으로 로그인됩니다</string>
+    <string name="login_code_clip_label">GitHub 로그인 코드</string>
+
+    <!-- 대시보드 -->
+    <string name="dashboard_last_synced">마지막 동기화 %1$s · 당겨서 새로고침</string>
+    <string name="no_data_yet">아직 데이터가 없습니다</string>
+    <string name="sync_failed">동기화하지 못했습니다</string>
+    <string name="graph_title">기여 그래프</string>
+    <plurals name="graph_subtitle">
+        <item quantity="other">최근 1년 동안 %1$s회 기여했어요</item>
+    </plurals>
+    <string name="graph_hint">칸을 누르면 날짜별 기여를 볼 수 있어요</string>
+    <string name="day_no_contributions">기여 없음</string>
+    <plurals name="day_contributions">
+        <item quantity="other">%1$s회</item>
+    </plurals>
+    <string name="stat_last_year">최근 1년</string>
+    <string name="stat_current_streak">연속 기여</string>
+    <string name="stat_longest_streak">최장 연속</string>
+    <string name="stat_best_day">최고 기록</string>
+    <string name="unit_count">회</string>
+    <plurals name="unit_days">
+        <item quantity="other">일</item>
+    </plurals>
+    <string name="stat_daily_average">하루 평균 %1$s회</string>
+    <string name="stat_today">오늘 %1$d회</string>
+    <plurals name="stat_active_days">
+        <item quantity="other">활동한 날 %1$d일</item>
+    </plurals>
+    <string name="stat_no_record">기록 없음</string>
+    <string name="monthly_title">월별 기여</string>
+    <string name="monthly_peak">가장 활발한 달은 %1$s이에요 · %2$s회</string>
+    <string name="monthly_default">최근 12개월</string>
+    <string name="weekday_title">요일별 패턴</string>
+    <string name="weekday_peak">%1$s에 가장 많이 기여했어요</string>
+    <string name="weekday_default">요일별 기여 비율</string>
+    <string name="loading_contributions">기여 데이터를 불러오는 중…</string>
+
+    <!-- 위젯 탭 -->
+    <string name="widget_title">위젯</string>
+    <string name="widget_subtitle">홈 화면에 놓일 위젯의 모양을 꾸며요</string>
+    <string name="preview_title">미리보기</string>
+    <string name="preview_subtitle">실제 위젯과 같은 방식으로 그립니다</string>
+    <string name="style_title">스타일</string>
+    <string name="field_theme">테마</string>
+    <string name="field_color">색상</string>
+    <string name="field_bg_opacity">배경 불투명도</string>
+    <string name="home_widget_title">홈 화면 위젯</string>
+    <string name="home_widget_subtitle">런처에서 직접 추가하거나 아래 버튼을 누르세요</string>
+    <string name="widget_tip_refresh">그래프를 누르면 바로 새로고침합니다.</string>
+    <string name="widget_tip_open">위젯 위쪽 이름 부분을 누르면 이 앱이 열립니다.</string>
+    <string name="widget_tip_resize">길게 눌러 크기를 바꾸면 표시 기간이 자동으로 맞춰집니다.</string>
+    <string name="add_widget">홈 화면에 위젯 추가</string>
+    <string name="display_title">표시 요소</string>
+    <string name="display_header">헤더</string>
+    <string name="display_header_desc">계정 이름, 최근 1년 기여 수, 연속 기여일</string>
+    <string name="display_months">월 이름</string>
+    <string name="display_months_desc">그래프 위에 월을 표시합니다</string>
+
+    <!-- 설정 -->
+    <string name="settings_title">설정</string>
+    <string name="connected">GitHub 연결됨</string>
+    <string name="appearance_title">화면</string>
+    <string name="appearance_footer">이 앱의 테마입니다. 홈 화면 위젯의 테마는 위젯 탭에서 따로 정합니다.</string>
+    <string name="app_theme">앱 테마</string>
+    <string name="sync_title">동기화</string>
+    <string name="sync_footer">배터리가 부족하면 자동 새로고침을 건너뛰고, 그래프가 바뀌지 않으면 위젯을 다시 그리지 않습니다.</string>
+    <string name="refresh_interval">자동 새로고침 간격</string>
+    <string name="refresh_hours">%1$d시간</string>
+    <string name="last_synced">마지막 동기화</string>
+    <string name="never">없음</string>
+    <string name="refresh_now">지금 새로고침</string>
+    <string name="account_title">계정</string>
+    <string name="manage_access">GitHub 권한 관리</string>
+    <string name="manage_access_desc">Authorized OAuth Apps에서 이 앱의 접근을 해제할 수 있어요</string>
+    <string name="sign_out">로그아웃</string>
+    <string name="about_title">정보</string>
+    <string name="version">버전</string>
+    <string name="diagnostics">진단 기록</string>
+    <string name="diagnostics_desc">동기화·로그인·네트워크 기록 (문제 원인 확인용)</string>
+    <string name="source_code">소스 코드</string>
+    <string name="sign_out_confirm_title">로그아웃할까요?</string>
+    <string name="sign_out_confirm_body">이 기기에 저장된 토큰과 기여 데이터가 삭제되고, 위젯에는 로그인 안내가 표시됩니다.</string>
+
+    <!-- 진단 기록 화면 -->
+    <string name="back">뒤로</string>
+    <string name="diag_summary_filtered">%1$d건 표시 · 전체 %2$d건 · 최신순</string>
+    <plurals name="diag_summary">
+        <item quantity="other">최근 %1$d건 · 최신순</item>
+    </plurals>
+    <string name="diag_errors_only">오류만</string>
+    <string name="diag_all">전체</string>
+    <string name="diag_copy_shown">보이는 기록 복사</string>
+    <string name="diag_copy">복사</string>
+    <plurals name="diag_copied">
+        <item quantity="other">진단 기록 %1$d건을 복사했습니다</item>
+    </plurals>
+    <string name="diag_clear_all">모두 지우기</string>
+    <string name="diag_empty">아직 기록이 없습니다</string>
+    <string name="diag_empty_filtered">고른 종류의 기록이 없습니다</string>
+    <string name="diag_kind_sync">동기화</string>
+    <string name="diag_kind_auth">로그인·토큰</string>
+    <string name="diag_kind_reminder">잔디 알림</string>
+    <string name="diag_kind_app">앱</string>
+    <string name="diag_clip_label">GitHub 잔디 진단 기록</string>
+
+    <!-- 잔디 알림 설정 -->
+    <string name="reminder_title">잔디 알림</string>
+    <string name="reminder_footer">GitHub에서 오늘 기여가 0건일 때만 알려요. 커밋이 확인되면 그날 남은 알림은 보내지 않고, 알림의 \'오늘은 그만\'으로 멈출 수도 있어요.</string>
+    <string name="reminder_toggle">오늘 기여가 없으면 알림</string>
+    <string name="reminder_toggle_off_desc">늦은 시간까지 잔디가 비어 있으면 여러 번 나눠 알려 드려요</string>
+    <string name="reminder_next_check">다음 확인: %1$s</string>
+    <string name="reminder_on">켜짐</string>
+    <string name="notif_off_title">알림 권한이 꺼져 있어요</string>
+    <string name="notif_off_body">권한을 켜야 잔디 알림을 받을 수 있어요.</string>
+    <string name="open_notification_settings">알림 설정 열기</string>
+    <string name="reminder_first_time">첫 알림 시각</string>
+    <string name="reminder_hour_pattern">H시</string>
+    <string name="reminder_interval">간격</string>
+    <string name="reminder_every_30">30분마다</string>
+    <string name="reminder_every_60">1시간마다</string>
+    <string name="reminder_times">%1$s (하루 최대 %2$d번)</string>
+    <string name="reminder_preview">알림 미리 보기</string>
+    <string name="time_pattern">HH:mm</string>
+    <string name="reminder_today_at">오늘 %1$s</string>
+    <string name="reminder_tomorrow_at">내일 %1$s</string>
+    <string name="reminder_needs_permission">알림 권한이 있어야 잔디 알림을 받을 수 있어요</string>
+    <string name="turn_on_notifications_first">알림 권한을 먼저 켜 주세요</string>
+
+    <!-- 잔디 알림 (알림창) -->
+    <string name="reminder_channel">잔디 알림</string>
+    <string name="reminder_channel_desc">늦은 시간까지 오늘 GitHub 기여가 없을 때 알려 줍니다</string>
+    <string name="reminder_action_stop">오늘은 그만</string>
+    <string name="reminder_preview_suffix">%1$s (미리 보기)</string>
+    <string name="left_hm">%1$d시간 %2$d분</string>
+    <string name="left_m">%1$d분</string>
+    <string name="reminder_at_risk_streak">연속 %1$d일 기록이 끊겨요</string>
+    <string name="reminder_at_risk_empty">오늘 잔디는 빈칸으로 남아요</string>
+    <string name="reminder_last_title">마지막 알림: 자정까지 %1$s 🚨</string>
+    <string name="reminder_last_body">자정이 지나면 %1$s. 지금 커밋 하나만 해 주세요!</string>
+    <string name="reminder_soon_title">잔디가 끊기기 직전이에요 ⏰</string>
+    <string name="reminder_soon_body">자정까지 %1$s 남았어요. 지나면 %2$s.</string>
+    <string name="reminder_first_title">오늘 잔디가 아직 비어 있어요 🌱</string>
+    <string name="reminder_first_body_streak">연속 %1$d일째 이어 온 잔디, 오늘도 커밋 하나로 지켜 주세요.</string>
+    <string name="reminder_first_body">오늘 GitHub 기여가 아직 없어요. 커밋 하나로 잔디를 심어 보세요.</string>
+    <string name="reminder_mid_title">아직 오늘 기여가 없어요 (%1$d/%2$d)</string>
+    <string name="reminder_mid_body_streak">자정까지 %1$s 남았어요. 연속 %2$d일을 이어가려면 커밋 하나면 충분해요.</string>
+    <string name="reminder_mid_body">자정까지 %1$s 남았어요. 잔디를 채우려면 커밋 하나면 충분해요.</string>
+
+    <!-- 동기화 -->
+    <string name="sync_channel">동기화</string>
+    <string name="sync_notification_title">GitHub 잔디 동기화 중</string>
+
+    <!-- 홈 화면 위젯 -->
+    <string name="widget_refreshing_toast">GitHub 잔디 새로고침 중…</string>
+    <string name="widget_sign_in_again">다시 로그인이 필요합니다. 앱을 열어 주세요.</string>
+    <string name="widget_sign_in">앱을 열어 GitHub에 로그인하세요</string>
+    <plurals name="widget_header_long">
+        <item quantity="other">최근 1년 %1$s회</item>
+    </plurals>
+    <plurals name="widget_header_short">
+        <item quantity="other">%1$s회</item>
+    </plurals>
+    <string name="widget_header_compact">%1$s회</string>
+    <string name="widget_header_streak">" · 연속 %1$d일"</string>
+
+    <!-- 오류 -->
+    <string name="error_code_expired">로그인 코드가 만료되었습니다. 다시 로그인해 주세요.</string>
+    <string name="error_access_denied">GitHub에서 로그인을 거부했습니다.</string>
+    <string name="error_bad_refresh_token">로그인 갱신 기한이 지났습니다. 다시 로그인해 주세요.</string>
+    <string name="error_device_flow_disabled">OAuth App 설정에서 Device Flow가 꺼져 있습니다.</string>
+    <string name="error_incorrect_client">OAuth App의 Client ID가 올바르지 않습니다.</string>
+    <string name="error_unknown">알 수 없는 오류</string>
+    <string name="error_auth_server">GitHub 로그인 서버 오류 (HTTP %1$d)</string>
+    <string name="error_not_signed_in">로그인 정보가 없습니다</string>
+    <string name="error_token_rejected">GitHub가 로그인 토큰을 거부했습니다 (HTTP 401)</string>
+    <string name="error_refreshed_token_rejected">갱신한 토큰도 거부되었습니다 (HTTP 401)</string>
+    <string name="error_no_internet">인터넷에 연결할 수 없어 GitHub 주소를 찾지 못했습니다</string>
+    <string name="error_timeout">GitHub 응답이 늦어 시간이 초과되었습니다</string>
+    <string name="error_connect">GitHub에 연결하지 못했습니다</string>
+    <string name="error_ssl">보안 연결을 만들지 못했습니다 (네트워크 확인 필요)</string>
+    <string name="error_session_expired">로그인이 만료되었습니다. 앱에서 다시 로그인해 주세요.</string>
+    <string name="error_rate_limited">요청이 제한되었습니다. 잠시 후 다시 시도합니다 (HTTP %1$d)</string>
+    <string name="error_server">GitHub 서버 오류 (HTTP %1$d)</string>
+    <string name="error_no_viewer">GitHub 계정 정보를 받지 못했습니다</string>
+    <string name="error_request_failed">GitHub 요청 실패</string>
+</resources>

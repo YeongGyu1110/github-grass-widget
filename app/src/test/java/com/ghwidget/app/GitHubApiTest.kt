@@ -31,7 +31,7 @@ class GitHubApiTest {
         assertTrue(GitHubAuth.parsePoll("""{"error":"expired_token"}""", 5) is Poll.Failed)
         assertTrue(GitHubAuth.parsePoll("""{"error":"access_denied"}""", 5) is Poll.Failed)
         assertEquals(
-            Poll.Failed("OAuth App 설정에서 Device Flow가 꺼져 있습니다."),
+            Poll.Failed("device_flow_disabled"),
             GitHubAuth.parsePoll("""{"error":"device_flow_disabled"}""", 5),
         )
     }

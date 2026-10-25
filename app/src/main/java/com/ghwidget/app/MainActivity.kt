@@ -44,6 +44,7 @@ import com.ghwidget.app.data.Settings
 import com.ghwidget.app.data.Store
 import com.ghwidget.app.data.ThemeMode
 import com.ghwidget.app.data.TokenManager
+import com.ghwidget.app.data.friendlyError
 import com.ghwidget.app.reminder.Reminders
 import com.ghwidget.app.ui.Account
 import com.ghwidget.app.ui.HomeActions
@@ -82,6 +83,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         DiagLog.log(this, if (savedInstanceState == null) "앱 화면 열림" else "앱 화면 다시 만들어짐 (테마 등 설정 변경)")
+        // 이 앱의 언어를 바꾸고 돌아온 경우 위젯 문구도 맞춘다
+        WidgetUpdater.updateIfLocaleChanged(this)
         setContent { MainRoute(this) }
     }
 }
@@ -157,7 +160,7 @@ private fun MainRoute(activity: ComponentActivity) {
         if (granted) {
             applySettings(settings.copy(reminderEnabled = true))
         } else {
-            Toast.makeText(ctx, "알림 권한이 있어야 잔디 알림을 받을 수 있어요", Toast.LENGTH_LONG).show()
+            Toast.makeText(ctx, R.string.reminder_needs_permission, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -172,7 +175,7 @@ private fun MainRoute(activity: ComponentActivity) {
                     store.pendingLogin = code
                     pending = code
                 } catch (e: Exception) {
-                    loginError = e.message ?: e.javaClass.simpleName
+                    loginError = friendlyError(ctx, e)
                 } finally {
                     requestingCode = false
                 }
@@ -202,7 +205,7 @@ private fun MainRoute(activity: ComponentActivity) {
         loadDiagnostics = { DiagLog.read(ctx) },
         onClearDiagnostics = { DiagLog.clear(ctx) },
         onCopyDiagnostics = { text ->
-            ctx.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("GitHub 잔디 진단 기록", text))
+            ctx.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText(ctx.getString(R.string.diag_clip_label), text))
         },
         onReminderToggle = { on ->
             when {
@@ -215,7 +218,7 @@ private fun MainRoute(activity: ComponentActivity) {
         },
         onPreviewReminder = {
             if (Reminders.canNotify(ctx)) Reminders.preview(ctx)
-            else Toast.makeText(ctx, "알림 권한을 먼저 켜 주세요", Toast.LENGTH_SHORT).show()
+            else Toast.makeText(ctx, R.string.turn_on_notifications_first, Toast.LENGTH_SHORT).show()
         },
         onOpenNotificationSettings = {
             runCatching {
@@ -233,7 +236,7 @@ private fun MainRoute(activity: ComponentActivity) {
         var interval = code.interval
         while (true) {
             if (System.currentTimeMillis() > code.expiresAt) {
-                loginError = "로그인 코드가 만료되었습니다. 다시 로그인해 주세요."
+                loginError = ctx.getString(R.string.error_code_expired)
                 cancelLogin()
                 break
             }
@@ -267,7 +270,7 @@ private fun MainRoute(activity: ComponentActivity) {
                     break
                 }
                 is GitHubAuth.Poll.Failed -> {
-                    loginError = result.message
+                    loginError = GitHubAuth.errorMessage(ctx, result.error, result.description)
                     cancelLogin()
                     break
                 }
@@ -344,6 +347,6 @@ private fun loadAvatar(store: Store): ImageBitmap? =
 
 private fun openGitHubWithCode(ctx: Context, code: GitHubAuth.DeviceCode) {
     ctx.getSystemService(ClipboardManager::class.java)
-        ?.setPrimaryClip(ClipData.newPlainText("GitHub 로그인 코드", code.userCode))
+        ?.setPrimaryClip(ClipData.newPlainText(ctx.getString(R.string.login_code_clip_label), code.userCode))
     runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(code.verificationUri))) }
 }

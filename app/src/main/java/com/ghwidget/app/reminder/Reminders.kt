@@ -35,7 +35,6 @@ object Reminders {
     const val ACTION_MUTE_TODAY = "com.ghwidget.app.action.MUTE_TODAY"
     private const val CHANNEL = "contribution_reminder"
     private const val NOTIFICATION_ID = 2001
-    private val TIME = DateTimeFormatter.ofPattern("HH:mm")
 
     // ------------------------------------------------------------ 시각 계산 (순수 함수, 테스트 대상)
 
@@ -73,17 +72,19 @@ object Reminders {
 
     fun todayCount(data: ContributionData, today: LocalDate = LocalDate.now()): Int = data.byDate[today]?.count ?: 0
 
-    /** 알림 문구: 뒤로 갈수록 강하게 */
-    fun message(index: Int, total: Int, streak: Int, minutesLeft: Long): Pair<String, String> {
-        val left = if (minutesLeft >= 60) "${minutesLeft / 60}시간 ${minutesLeft % 60}분" else "${minutesLeft}분"
-        val atRisk = if (streak > 0) "연속 ${streak}일 기록이 끊겨요" else "오늘 잔디는 빈칸으로 남아요"
+    /** 알림 문구 (제목 to 본문): 뒤로 갈수록 강하게 */
+    fun message(context: Context, index: Int, total: Int, streak: Int, minutesLeft: Long): Pair<String, String> {
+        val r = context.resources
+        val left = if (minutesLeft >= 60) r.getString(R.string.left_hm, (minutesLeft / 60).toInt(), (minutesLeft % 60).toInt())
+        else r.getString(R.string.left_m, minutesLeft.toInt())
+        val atRisk = if (streak > 0) r.getString(R.string.reminder_at_risk_streak, streak) else r.getString(R.string.reminder_at_risk_empty)
         return when {
-            index >= total -> "마지막 알림: 자정까지 ${left} 🚨" to "자정이 지나면 $atRisk. 지금 커밋 하나만 해 주세요!"
-            minutesLeft <= 90 -> "잔디가 끊기기 직전이에요 ⏰" to "자정까지 ${left} 남았어요. 지나면 $atRisk."
-            index == 1 -> "오늘 잔디가 아직 비어 있어요 🌱" to
-                if (streak > 0) "연속 ${streak}일째 이어 온 잔디, 오늘도 커밋 하나로 지켜 주세요."
-                else "오늘 GitHub 기여가 아직 없어요. 커밋 하나로 잔디를 심어 보세요."
-            else -> "아직 오늘 기여가 없어요 ($index/$total)" to "자정까지 ${left} 남았어요. ${if (streak > 0) "연속 ${streak}일을 이어가려면" else "잔디를 채우려면"} 커밋 하나면 충분해요."
+            index >= total -> r.getString(R.string.reminder_last_title, left) to r.getString(R.string.reminder_last_body, atRisk)
+            minutesLeft <= 90 -> r.getString(R.string.reminder_soon_title) to r.getString(R.string.reminder_soon_body, left, atRisk)
+            index == 1 -> r.getString(R.string.reminder_first_title) to
+                if (streak > 0) r.getString(R.string.reminder_first_body_streak, streak) else r.getString(R.string.reminder_first_body)
+            else -> r.getString(R.string.reminder_mid_title, index, total) to
+                if (streak > 0) r.getString(R.string.reminder_mid_body_streak, left, streak) else r.getString(R.string.reminder_mid_body, left)
         }
     }
 
@@ -116,7 +117,7 @@ object Reminders {
         }
         if (store.reminderNextAt != at) {
             store.reminderNextAt = at
-            DiagLog.log(ctx, "잔디 알림 예약: ${describe(next, today)}${if (skipToday) " (오늘은 건너뜀)" else ""}")
+            DiagLog.log(ctx, "잔디 알림 예약: ${describe(ctx, next, today)}${if (skipToday) " (오늘은 건너뜀)" else ""}")
         }
     }
 
@@ -130,8 +131,13 @@ object Reminders {
         }
     }
 
-    fun describe(t: LocalDateTime, today: LocalDate = LocalDate.now()): String =
-        (if (t.toLocalDate() == today) "오늘 " else "내일 ") + t.format(TIME)
+    /** 언어에 맞는 시각 형식 (한국어 21:00, 영어 9:00 PM) */
+    fun timeFormat(context: Context): DateTimeFormatter = DateTimeFormatter.ofPattern(context.getString(R.string.time_pattern))
+
+    fun describe(context: Context, t: LocalDateTime, today: LocalDate = LocalDate.now()): String = context.getString(
+        if (t.toLocalDate() == today) R.string.reminder_today_at else R.string.reminder_tomorrow_at,
+        t.format(timeFormat(context)),
+    )
 
     private fun isToday(epochMs: Long, today: LocalDate) =
         java.time.Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()).toLocalDate() == today
@@ -157,21 +163,22 @@ object Reminders {
             return
         }
         val minutesLeft = Duration.between(now, now.toLocalDate().plusDays(1).atStartOfDay()).toMinutes().coerceAtLeast(1)
-        val (title, text) = message(index, total, streak, minutesLeft)
+        val (title, text) = message(ctx, index, total, streak, minutesLeft)
         post(ctx, title, text)
     }
 
     /** 설정에서 "알림 미리 보기" */
     fun preview(context: Context) {
-        val (title, text) = message(1, 4, 12, 180)
-        post(context.applicationContext, title, "$text (미리 보기)")
+        val ctx = context.applicationContext
+        val (title, text) = message(ctx, 1, 4, 12, 180)
+        post(ctx, title, ctx.getString(R.string.reminder_preview_suffix, text))
     }
 
     private fun post(ctx: Context, title: String, text: String) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL, "잔디 알림", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "늦은 시간까지 오늘 GitHub 기여가 없을 때 알려 줍니다"
+            NotificationChannel(CHANNEL, ctx.getString(R.string.reminder_channel), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = ctx.getString(R.string.reminder_channel_desc)
             },
         )
         val open = PendingIntent.getActivity(
@@ -194,7 +201,7 @@ object Reminders {
             .setContentIntent(open)
             .setAutoCancel(true)
             .setOnlyAlertOnce(false)
-            .addAction(Notification.Action.Builder(null, "오늘은 그만", mute).build())
+            .addAction(Notification.Action.Builder(null, ctx.getString(R.string.reminder_action_stop), mute).build())
             .build()
         nm.notify(NOTIFICATION_ID, n)
     }

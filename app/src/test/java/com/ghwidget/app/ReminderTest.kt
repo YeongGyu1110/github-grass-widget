@@ -54,20 +54,35 @@ class ReminderTest {
     }
 
     @Test
+    @Config(qualifiers = "ko")
     fun positionAndEscalatingMessages() {
         val s = Settings(reminderStartHour = 21, reminderIntervalMin = 60)
         assertEquals(1 to 4, Reminders.position(at(21, 0), s))
         assertEquals(3 to 4, Reminders.position(at(22, 59), s)) // 알람이 1분 일찍 울려도 23:00 회차로 본다
         assertEquals(4 to 4, Reminders.position(at(23, 30), s))
 
-        val first = Reminders.message(1, 4, streak = 12, minutesLeft = 180)
+        val ctx = RuntimeEnvironment.getApplication()
+        val first = Reminders.message(ctx, 1, 4, streak = 12, minutesLeft = 180)
         assertTrue(first.first.contains("비어 있어요"))
         assertTrue(first.second.contains("연속 12일"))
-        assertTrue(Reminders.message(3, 4, 12, 60).first.contains("직전")) // 90분 이하
-        val last = Reminders.message(4, 4, 12, 30)
-        assertTrue(last.first.startsWith("마지막 알림"))
+        assertTrue(Reminders.message(ctx, 3, 4, 12, 60).first.contains("직전")) // 90분 이하
+        val last = Reminders.message(ctx, 4, 4, 12, 30)
+        assertEquals("마지막 알림: 자정까지 30분 🚨", last.first)
         assertTrue(last.second.contains("연속 12일 기록이 끊겨요"))
-        assertTrue(Reminders.message(4, 4, 0, 30).second.contains("빈칸"))
+        assertTrue(Reminders.message(ctx, 4, 4, 0, 30).second.contains("빈칸"))
+        assertEquals("아직 오늘 기여가 없어요 (2/4)", Reminders.message(ctx, 2, 4, 12, 150).first)
+        assertTrue(Reminders.message(ctx, 2, 4, 12, 150).second.startsWith("자정까지 2시간 30분 남았어요."))
+    }
+
+    @Test
+    @Config(qualifiers = "en")
+    fun englishMessages() {
+        val ctx = RuntimeEnvironment.getApplication()
+        assertEquals("No contributions yet today 🌱", Reminders.message(ctx, 1, 4, 12, 180).first)
+        assertEquals("Last reminder: 30m until midnight 🚨", Reminders.message(ctx, 4, 4, 12, 30).first)
+        assertTrue(Reminders.message(ctx, 4, 4, 12, 30).second.contains("your 12-day streak ends"))
+        assertTrue(Reminders.message(ctx, 2, 4, 0, 150).second.startsWith("2h 30m left until midnight."))
+        assertEquals("Tomorrow 9:00 PM", Reminders.describe(ctx, at(21, 0), day.minusDays(1)))
     }
 
     @Test

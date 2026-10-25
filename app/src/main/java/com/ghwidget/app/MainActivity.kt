@@ -116,6 +116,7 @@ private fun MainRoute(activity: ComponentActivity) {
     var notificationsAllowed by remember { mutableStateOf(Reminders.canNotify(ctx)) }
     // 언어를 바꾸면 시스템이 화면을 다시 만들므로 처음 한 번만 읽으면 된다
     val appLanguage = remember { appLanguage(ctx) }
+    var resumedAt by remember { mutableStateOf(System.currentTimeMillis()) }
 
     val workInfos by remember { WorkManager.getInstance(ctx).getWorkInfosForUniqueWorkFlow(Refresh.NOW) }
         .collectAsState(initial = emptyList())
@@ -298,11 +299,9 @@ private fun MainRoute(activity: ComponentActivity) {
             notificationsAllowed = Reminders.canNotify(ctx)
             Reminders.schedule(ctx)
             reminderNextAt = store.reminderNextAt
-            if (store.accessToken == null) return@LifecycleEventObserver
-            val now = System.currentTimeMillis()
-            val cached = store.cachedData()
-            val stale = cached == null || now - cached.fetchedAt > 10 * 60_000L || store.lastError != null
-            if (stale && now - store.lastAttemptAt > 60_000L) Refresh.now(ctx, "앱 열기 (데이터 오래됨/지난 실패)")
+            // 앱을 열기만 해서는 동기화하지 않는다 (주기 동기화·당겨서 새로고침·위젯 누름으로만).
+            // 대신 "마지막 동기화 N분 전" 표시는 지금 시각으로 다시 계산한다
+            resumedAt = System.currentTimeMillis()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -340,6 +339,7 @@ private fun MainRoute(activity: ComponentActivity) {
                 notificationsAllowed = notificationsAllowed,
                 appLanguage = appLanguage,
                 languageSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
+                resumedAt = resumedAt,
                 refreshing = refreshing,
                 requestingCode = requestingCode,
                 loginError = loginError,

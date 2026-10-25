@@ -40,6 +40,8 @@ data class HomeState(
     val appLanguage: String = "",
     /** 앱 안에서 언어를 바꿀 수 있는지 (Android 13+ 앱별 언어) */
     val languageSupported: Boolean = false,
+    /** 화면으로 돌아온 시각. 바뀌면 "N분 전" 같은 표시를 새로 계산한다 */
+    val resumedAt: Long = 0L,
 )
 
 class HomeActions(

@@ -136,7 +136,7 @@
     <string name="about_title">정보</string>
     <string name="version">버전</string>
     <string name="diagnostics">진단 기록</string>
-    <string name="diagnostics_desc">동기화·로그인·네트워크 기록 (문제 원인 확인용)</string>
+    <string name="diagnostics_desc">동기화·로그인·네트워크 기록</string>
     <string name="source_code">소스 코드</string>
     <string name="sign_out_confirm_title">로그아웃할까요?</string>
     <string name="sign_out_confirm_body">이 기기에 저장된 토큰과 기여 데이터가 삭제되고, 위젯에는 로그인 안내가 표시됩니다.</string>

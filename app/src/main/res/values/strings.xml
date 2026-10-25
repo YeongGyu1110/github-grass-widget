@@ -148,7 +148,7 @@
     <string name="about_title">About</string>
     <string name="version">Version</string>
     <string name="diagnostics">Diagnostics</string>
-    <string name="diagnostics_desc">Sync, sign-in, and network logs (for troubleshooting)</string>
+    <string name="diagnostics_desc">Sync, sign-in, and network logs</string>
     <string name="source_code">Source code</string>
     <string name="sign_out_confirm_title">Sign out?</string>
     <string name="sign_out_confirm_body">The token and contribution data stored on this device will be deleted, and the widget will show a sign-in prompt.</string>

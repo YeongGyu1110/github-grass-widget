@@ -60,10 +60,12 @@ class HomeScreenshotTest {
         return ContributionData("octocat", days, days.sumOf { it.count }, System.currentTimeMillis() - 4 * 60_000)
     }
 
-    private fun shoot(name: String, dark: Boolean, state: HomeState, tab: Tab = Tab.Dashboard) {
+    /** clicks: 찍기 전에 차례로 누를 글자 (설정 세부 화면으로 들어갈 때) */
+    private fun shoot(name: String, dark: Boolean, state: HomeState, tab: Tab = Tab.Dashboard, vararg clicks: String) {
         compose.setContent {
             AppTheme(darkTheme = dark) { MainScreen(state.copy(systemDark = dark), HomeActions(), initialTab = tab) }
         }
+        clicks.forEach { compose.onNodeWithText(it).performScrollTo().performClick() }
         capture(name)
     }
 
@@ -117,7 +119,18 @@ class HomeScreenshotTest {
             reminderNextAt = System.currentTimeMillis() + 3_600_000L,
         ),
         Tab.Settings,
+        "잔디 알림",
     )
+
+    private val signedIn get() = base.copy(account = Account.SignedIn("octocat"), data = sampleData())
+
+    @Test fun settingsAppearanceLight() = shoot("settings_appearance_light", false, signedIn, Tab.Settings, "화면 및 언어")
+
+    @Test fun settingsSyncLight() = shoot("settings_sync_light", false, signedIn, Tab.Settings, "동기화")
+
+    /** 잔디 알림을 켰는데 알림 권한이 꺼져 있으면 첫 화면 요약이 경고로 */
+    @Test fun settingsHomeNotificationsOff() = shoot("settings_home_notifications_off", false,
+        signedIn.copy(settings = Settings(reminderEnabled = true), notificationsAllowed = false), Tab.Settings)
 
     // 영어 기기
     @Test @Config(qualifiers = "en-w400dp-h1700dp-xhdpi")
@@ -143,7 +156,12 @@ class HomeScreenshotTest {
             reminderNextAt = System.currentTimeMillis() + 3_600_000L,
         ),
         Tab.Settings,
+        "Contribution reminder",
     )
+
+    @Test @Config(qualifiers = "en-w400dp-h1700dp-xhdpi")
+    fun settingsAppearanceEnglish() = shoot("en_settings_appearance_light", false,
+        base.copy(account = Account.SignedIn("octocat"), data = sampleData()), Tab.Settings, "Appearance & language")
 
     @Test fun loadingLight() = shoot("loading_light", false, base.copy(account = Account.SignedIn("octocat"), refreshing = true))
 

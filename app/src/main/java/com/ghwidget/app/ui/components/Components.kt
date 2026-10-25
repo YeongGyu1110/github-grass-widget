@@ -496,6 +496,8 @@ fun ListRow(
     destructive: Boolean = false,
     showChevron: Boolean = false,
     onClick: (() -> Unit)? = null,
+    /** 설명 줄 색 (경고 등). 없으면 흐린 글자색 */
+    descriptionColor: Color? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val c = AppTheme.colors
@@ -512,7 +514,7 @@ fun ListRow(
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, color = if (destructive) c.destructive else c.foreground)
-            if (description != null) Text(description, style = MaterialTheme.typography.bodySmall, color = c.mutedForeground)
+            if (description != null) Text(description, style = MaterialTheme.typography.bodySmall, color = descriptionColor ?: c.mutedForeground)
         }
         if (value != null) {
             Spacer(Modifier.width(12.dp))

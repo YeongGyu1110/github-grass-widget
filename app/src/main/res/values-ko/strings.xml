@@ -106,6 +106,16 @@
     <string name="language_system">시스템</string>
     <string name="language_footer">시스템은 휴대폰 언어를 따릅니다.</string>
 
+    <!-- 설정 첫 화면 (항목 요약) -->
+    <string name="settings_group_app">앱</string>
+    <string name="appearance_language_title">화면 및 언어</string>
+    <string name="appearance_summary">%1$s 테마 · %2$s</string>
+    <string name="summary_off">꺼짐</string>
+    <string name="reminder_summary_30">%1$s부터 30분마다</string>
+    <string name="reminder_summary_60">%1$s부터 1시간마다</string>
+    <string name="sync_summary">%1$d시간마다 · %2$s</string>
+    <string name="sync_summary_interval">%1$d시간마다</string>
+
     <!-- 설정 -->
     <string name="settings_title">설정</string>
     <string name="connected">GitHub 연결됨</string>

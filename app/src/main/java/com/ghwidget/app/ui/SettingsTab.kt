@@ -7,6 +7,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.FlowRow
@@ -58,89 +60,71 @@ import java.time.LocalTime
 
 private val REFRESH_HOURS = listOf(1, 3, 6, 12, 24)
 
+/** 설정은 2단: 첫 화면은 항목 목록과 현재 값 요약, 누르면 세부 화면 (계정은 항목이 적어 첫 화면에 그대로) */
+private enum class SettingsPage { HOME, APPEARANCE, REMINDER, SYNC, DIAGNOSTICS }
+
 @Composable
 fun SettingsTab(state: HomeState, actions: HomeActions) {
-    val c = AppTheme.colors
-    val login = (state.account as? Account.SignedIn)?.login
-    var confirmSignOut by rememberSaveable { mutableStateOf(false) }
-    var showDiagnostics by rememberSaveable { mutableStateOf(false) }
-
-    if (showDiagnostics) {
-        DiagnosticsPage(actions) { showDiagnostics = false }
-        return
+    // rememberSaveable: 언어를 바꿔 화면이 다시 만들어져도 보던 세부 화면에 머문다
+    var page by rememberSaveable { mutableStateOf(SettingsPage.HOME) }
+    val back = { page = SettingsPage.HOME }
+    when (page) {
+        SettingsPage.HOME -> SettingsHome(state, actions) { page = it }
+        SettingsPage.APPEARANCE -> SubPage(stringResource(R.string.appearance_language_title), back) { AppearanceContent(state, actions) }
+        SettingsPage.REMINDER -> SubPage(stringResource(R.string.reminder_title), back) { ReminderGroup(state, actions) }
+        SettingsPage.SYNC -> SubPage(stringResource(R.string.sync_title), back) { SyncContent(state, actions) }
+        SettingsPage.DIAGNOSTICS -> DiagnosticsPage(actions, back)
     }
+}
 
+/** 설정 첫 화면: 프로필 + 항목마다 현재 값 요약 + 계정 + 정보 */
+@Composable
+private fun SettingsHome(state: HomeState, actions: HomeActions, open: (SettingsPage) -> Unit) {
+    val c = AppTheme.colors
+    val s = state.settings
+    var confirmSignOut by rememberSaveable { mutableStateOf(false) }
     TabPage {
         PageHeader(stringResource(R.string.settings_title))
 
-        // 프로필
-        AppCard {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Avatar(login, state.avatar, size = 48.dp)
-                Column(Modifier.weight(1f).padding(start = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(login?.let { "@$it" } ?: stringResource(R.string.checking_account), style = MaterialTheme.typography.titleMedium, color = c.foreground)
-                    StatusBadge(stringResource(R.string.connected), BadgeTone.Success)
-                }
-            }
-        }
+        AppCard { ProfileSummary(state) }
 
-        ListGroup(stringResource(R.string.appearance_title), footer = stringResource(R.string.appearance_footer)) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(stringResource(R.string.app_theme), style = MaterialTheme.typography.titleSmall, color = c.foreground)
-                val themes = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK)
-                SegmentedControl(
-                    listOf(stringResource(R.string.theme_system), stringResource(R.string.theme_light), stringResource(R.string.theme_dark)),
-                    themes.indexOf(state.settings.appTheme),
-                    { actions.onSettingsChange(state.settings.copy(appTheme = themes[it])) },
-                )
-            }
-        }
-
-        if (state.languageSupported) {
-            val languages = listOf("", "en", "ko")
-            ListGroup(stringResource(R.string.language_title), footer = stringResource(R.string.language_footer)) {
-                Column(Modifier.padding(16.dp)) {
-                    SegmentedControl(
-                        listOf(
-                            stringResource(R.string.language_system),
-                            stringResource(R.string.lang_english),
-                            stringResource(R.string.lang_korean),
-                        ),
-                        languages.indexOf(state.appLanguage).coerceAtLeast(0),
-                        { actions.onLanguageChange(languages[it]) },
-                    )
-                }
-            }
-        }
-
-        ReminderGroup(state, actions)
-
-        ListGroup(stringResource(R.string.sync_title), footer = stringResource(R.string.sync_footer)) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(stringResource(R.string.refresh_interval), style = MaterialTheme.typography.titleSmall, color = c.foreground)
-                SegmentedControl(
-                    REFRESH_HOURS.map { stringResource(R.string.refresh_hours, it) },
-                    REFRESH_HOURS.indexOf(state.settings.refreshHours).coerceAtLeast(0),
-                    { actions.onSettingsChange(state.settings.copy(refreshHours = REFRESH_HOURS[it])) },
-                )
-            }
-            AppDivider()
+        ListGroup(stringResource(R.string.settings_group_app)) {
             ListRow(
-                stringResource(R.string.last_synced),
-                icon = AppIcons.Clock,
-                value = when {
-                    state.refreshing -> stringResource(R.string.syncing)
-                    state.data != null -> relativeTime(LocalContext.current, state.data.fetchedAt)
-                    else -> stringResource(R.string.never)
-                },
+                stringResource(R.string.appearance_language_title),
+                icon = AppIcons.Palette,
+                description = appearanceSummary(state),
+                showChevron = true,
+                onClick = { open(SettingsPage.APPEARANCE) },
             )
             AppDivider()
             ListRow(
-                stringResource(R.string.refresh_now),
+                stringResource(R.string.reminder_title),
+                icon = AppIcons.Bell,
+                description = when {
+                    !s.reminderEnabled -> stringResource(R.string.summary_off)
+                    // 권한이 꺼져 있으면 알림이 오지 않으므로 첫 화면에서 바로 알린다
+                    !state.notificationsAllowed -> stringResource(R.string.notif_off_title)
+                    else -> stringResource(
+                        if (s.reminderIntervalMin == 30) R.string.reminder_summary_30 else R.string.reminder_summary_60,
+                        LocalTime.of(s.reminderStartHour, 0).format(DateTimeFormatter.ofPattern(stringResource(R.string.reminder_hour_pattern))),
+                    )
+                },
+                descriptionColor = if (s.reminderEnabled && !state.notificationsAllowed) c.destructive else null,
+                showChevron = true,
+                onClick = { open(SettingsPage.REMINDER) },
+            )
+            AppDivider()
+            ListRow(
+                stringResource(R.string.sync_title),
                 icon = AppIcons.Refresh,
-                onClick = actions.onRefresh.takeIf { !state.refreshing },
-                trailing = if (state.refreshing) ({ Spinner(size = 14.dp) }) else null,
-                showChevron = !state.refreshing,
+                description = when {
+                    state.refreshing -> stringResource(R.string.sync_summary, s.refreshHours, stringResource(R.string.syncing))
+                    state.data != null ->
+                        stringResource(R.string.sync_summary, s.refreshHours, relativeTime(LocalContext.current, state.data.fetchedAt))
+                    else -> stringResource(R.string.sync_summary_interval, s.refreshHours)
+                },
+                showChevron = true,
+                onClick = { open(SettingsPage.SYNC) },
             )
         }
 
@@ -157,14 +141,12 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
         }
 
         ListGroup(stringResource(R.string.about_title)) {
-            ListRow(stringResource(R.string.version), icon = AppIcons.Info, value = state.versionName.ifEmpty { "-" })
-            AppDivider()
             ListRow(
                 stringResource(R.string.diagnostics),
                 icon = AppIcons.Activity,
                 description = stringResource(R.string.diagnostics_desc),
                 showChevron = true,
-                onClick = { showDiagnostics = true },
+                onClick = { open(SettingsPage.DIAGNOSTICS) },
             )
             AppDivider()
             ListRow(
@@ -174,6 +156,8 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
                 showChevron = true,
                 onClick = { actions.onOpenUrl(REPO_URL) },
             )
+            AppDivider()
+            ListRow(stringResource(R.string.version), icon = AppIcons.Info, value = state.versionName.ifEmpty { "-" })
         }
     }
 
@@ -196,6 +180,121 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
             dismissButton = {
                 AppButton(stringResource(R.string.cancel), { confirmSignOut = false }, variant = ButtonVariant.Outline)
             },
+        )
+    }
+}
+
+/** "시스템 테마 · 한국어": 언어는 '시스템'이어도 실제로 쓰고 있는 언어 이름으로 보여준다 */
+@Composable
+private fun appearanceSummary(state: HomeState): String {
+    val theme = stringResource(
+        when (state.settings.appTheme) {
+            ThemeMode.SYSTEM -> R.string.theme_system
+            ThemeMode.LIGHT -> R.string.theme_light
+            ThemeMode.DARK -> R.string.theme_dark
+        },
+    )
+    val language = when (LocalConfiguration.current.locales[0].language) {
+        "ko" -> stringResource(R.string.lang_korean)
+        else -> stringResource(R.string.lang_english)
+    }
+    return stringResource(R.string.appearance_summary, theme, language)
+}
+
+/** 프로필 사진, 계정 이름, 연결 상태 */
+@Composable
+private fun ProfileSummary(state: HomeState) {
+    val c = AppTheme.colors
+    val login = (state.account as? Account.SignedIn)?.login
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Avatar(login, state.avatar, size = 48.dp)
+        Column(Modifier.padding(start = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(login?.let { "@$it" } ?: stringResource(R.string.checking_account), style = MaterialTheme.typography.titleMedium, color = c.foreground)
+            StatusBadge(stringResource(R.string.connected), BadgeTone.Success)
+        }
+    }
+}
+
+/** 세부 화면: 뒤로 버튼 + 제목. 휴대폰 뒤로 가기도 첫 화면으로 */
+@Composable
+private fun SubPage(title: String, onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    BackHandler(onBack = onBack)
+    TabPage {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+            AppIconButton(AppIcons.ChevronLeft, stringResource(R.string.back), onBack)
+            Text(
+                title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = AppTheme.colors.foreground,
+                modifier = Modifier.padding(start = 12.dp),
+            )
+        }
+        content()
+    }
+}
+
+@Composable
+private fun AppearanceContent(state: HomeState, actions: HomeActions) {
+    val c = AppTheme.colors
+    ListGroup(stringResource(R.string.appearance_title), footer = stringResource(R.string.appearance_footer)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.app_theme), style = MaterialTheme.typography.titleSmall, color = c.foreground)
+            val themes = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK)
+            SegmentedControl(
+                listOf(stringResource(R.string.theme_system), stringResource(R.string.theme_light), stringResource(R.string.theme_dark)),
+                themes.indexOf(state.settings.appTheme),
+                { actions.onSettingsChange(state.settings.copy(appTheme = themes[it])) },
+            )
+        }
+    }
+
+    if (state.languageSupported) {
+        val languages = listOf("", "en", "ko")
+        ListGroup(stringResource(R.string.language_title), footer = stringResource(R.string.language_footer)) {
+            Column(Modifier.padding(16.dp)) {
+                SegmentedControl(
+                    listOf(
+                        stringResource(R.string.language_system),
+                        stringResource(R.string.lang_english),
+                        stringResource(R.string.lang_korean),
+                    ),
+                    languages.indexOf(state.appLanguage).coerceAtLeast(0),
+                    { actions.onLanguageChange(languages[it]) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SyncContent(state: HomeState, actions: HomeActions) {
+    val c = AppTheme.colors
+    ListGroup(null, footer = stringResource(R.string.sync_footer)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.refresh_interval), style = MaterialTheme.typography.titleSmall, color = c.foreground)
+            SegmentedControl(
+                REFRESH_HOURS.map { stringResource(R.string.refresh_hours, it) },
+                REFRESH_HOURS.indexOf(state.settings.refreshHours).coerceAtLeast(0),
+                { actions.onSettingsChange(state.settings.copy(refreshHours = REFRESH_HOURS[it])) },
+            )
+        }
+        AppDivider()
+        ListRow(
+            stringResource(R.string.last_synced),
+            icon = AppIcons.Clock,
+            value = when {
+                state.refreshing -> stringResource(R.string.syncing)
+                state.data != null -> relativeTime(LocalContext.current, state.data.fetchedAt)
+                else -> stringResource(R.string.never)
+            },
+        )
+        AppDivider()
+        ListRow(
+            stringResource(R.string.refresh_now),
+            icon = AppIcons.Refresh,
+            onClick = actions.onRefresh.takeIf { !state.refreshing },
+            trailing = if (state.refreshing) ({ Spinner(size = 14.dp) }) else null,
+            showChevron = !state.refreshing,
         )
     }
 }
@@ -343,10 +442,7 @@ private val REMINDER_INTERVALS = listOf(30, 60)
 private fun ReminderGroup(state: HomeState, actions: HomeActions) {
     val c = AppTheme.colors
     val s = state.settings
-    ListGroup(
-        stringResource(R.string.reminder_title),
-        footer = stringResource(R.string.reminder_footer),
-    ) {
+    ListGroup(null, footer = stringResource(R.string.reminder_footer)) {
         ListRow(
             stringResource(R.string.reminder_toggle),
             icon = AppIcons.Bell,

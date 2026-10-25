@@ -36,6 +36,10 @@ data class HomeState(
     val reminderNextAt: Long = 0L,
     /** 알림 권한이 있는지 */
     val notificationsAllowed: Boolean = true,
+    /** 이 앱만 쓰는 언어: "" 이면 휴대폰 언어를 따름, "en", "ko" */
+    val appLanguage: String = "",
+    /** 앱 안에서 언어를 바꿀 수 있는지 (Android 13+ 앱별 언어) */
+    val languageSupported: Boolean = false,
 )
 
 class HomeActions(
@@ -55,6 +59,8 @@ class HomeActions(
     val onReminderToggle: (Boolean) -> Unit = {},
     val onPreviewReminder: () -> Unit = {},
     val onOpenNotificationSettings: () -> Unit = {},
+    /** "" = 휴대폰 언어 따르기 */
+    val onLanguageChange: (String) -> Unit = {},
 )
 
 const val REPO_URL = "https://github.com/YeongGyu1110/github-grass-widget"

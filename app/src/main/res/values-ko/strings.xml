@@ -101,6 +101,11 @@
     <string name="display_months">월 이름</string>
     <string name="display_months_desc">그래프 위에 월을 표시합니다</string>
 
+    <!-- 언어 -->
+    <string name="language_title">언어</string>
+    <string name="language_system">시스템</string>
+    <string name="language_footer">시스템은 휴대폰 언어를 따릅니다.</string>
+
     <!-- 설정 -->
     <string name="settings_title">설정</string>
     <string name="connected">GitHub 연결됨</string>

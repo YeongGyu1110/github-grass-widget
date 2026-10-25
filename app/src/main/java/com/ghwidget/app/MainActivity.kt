@@ -1,6 +1,7 @@
 package com.ghwidget.app
 
 import android.Manifest
+import android.app.LocaleManager
 import android.appwidget.AppWidgetManager
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -11,6 +12,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.LocaleList
 import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -112,6 +114,8 @@ private fun MainRoute(activity: ComponentActivity) {
     var signOutNotice by remember { mutableStateOf(store.signOutNotice) }
     var reminderNextAt by remember { mutableStateOf(store.reminderNextAt) }
     var notificationsAllowed by remember { mutableStateOf(Reminders.canNotify(ctx)) }
+    // 언어를 바꾸면 시스템이 화면을 다시 만들므로 처음 한 번만 읽으면 된다
+    val appLanguage = remember { appLanguage(ctx) }
 
     val workInfos by remember { WorkManager.getInstance(ctx).getWorkInfosForUniqueWorkFlow(Refresh.NOW) }
         .collectAsState(initial = emptyList())
@@ -228,6 +232,12 @@ private fun MainRoute(activity: ComponentActivity) {
                 )
             }
         },
+        onLanguageChange = { tag ->
+            if (tag != appLanguage) {
+                DiagLog.log(ctx, "앱 언어 변경: ${appLanguage.ifEmpty { "시스템" }} → ${tag.ifEmpty { "시스템" }}")
+                setAppLanguage(ctx, tag)
+            }
+        },
     )
 
     // 진행 중인 로그인이 있으면 승인될 때까지 interval 초마다 확인한다
@@ -328,6 +338,8 @@ private fun MainRoute(activity: ComponentActivity) {
                 signOutNotice = signOutNotice,
                 reminderNextAt = reminderNextAt,
                 notificationsAllowed = notificationsAllowed,
+                appLanguage = appLanguage,
+                languageSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
                 refreshing = refreshing,
                 requestingCode = requestingCode,
                 loginError = loginError,
@@ -339,6 +351,21 @@ private fun MainRoute(activity: ComponentActivity) {
             actions = actions,
         )
     }
+}
+
+/**
+ * 이 앱만의 언어 (Android 13+ 앱별 언어. 휴대폰 설정 → 앱 → 언어와 같은 값).
+ * "" 이면 휴대폰 언어를 따른다
+ */
+private fun appLanguage(ctx: Context): String =
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) ""
+    else ctx.getSystemService(LocaleManager::class.java).applicationLocales.takeIf { !it.isEmpty }?.get(0)?.language ?: ""
+
+/** 바꾸면 시스템이 화면을 새 언어로 다시 만들고, 위젯·알림도 이 언어를 쓴다 */
+private fun setAppLanguage(ctx: Context, tag: String) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+    ctx.getSystemService(LocaleManager::class.java).applicationLocales =
+        if (tag.isEmpty()) LocaleList.getEmptyLocaleList() else LocaleList.forLanguageTags(tag)
 }
 
 private fun loadAvatar(store: Store): ImageBitmap? =

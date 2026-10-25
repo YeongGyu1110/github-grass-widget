@@ -110,6 +110,14 @@
     <string name="display_months">Month labels</string>
     <string name="display_months_desc">Show months above the graph</string>
 
+    <!-- 언어 (앱 안에서 바꾸기, Android 13+) -->
+    <string name="language_title">Language</string>
+    <string name="language_system">System</string>
+    <string name="language_footer">System follows your phone\'s language.</string>
+    <!-- 언어 이름은 그 언어로 표기 -->
+    <string name="lang_english" translatable="false">English</string>
+    <string name="lang_korean" translatable="false">한국어</string>
+
     <!-- 설정 -->
     <string name="settings_title">Settings</string>
     <string name="connected">Connected to GitHub</string>

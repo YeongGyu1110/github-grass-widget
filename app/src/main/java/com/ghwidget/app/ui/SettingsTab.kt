@@ -96,6 +96,23 @@ fun SettingsTab(state: HomeState, actions: HomeActions) {
             }
         }
 
+        if (state.languageSupported) {
+            val languages = listOf("", "en", "ko")
+            ListGroup(stringResource(R.string.language_title), footer = stringResource(R.string.language_footer)) {
+                Column(Modifier.padding(16.dp)) {
+                    SegmentedControl(
+                        listOf(
+                            stringResource(R.string.language_system),
+                            stringResource(R.string.lang_english),
+                            stringResource(R.string.lang_korean),
+                        ),
+                        languages.indexOf(state.appLanguage).coerceAtLeast(0),
+                        { actions.onLanguageChange(languages[it]) },
+                    )
+                }
+            }
+        }
+
         ReminderGroup(state, actions)
 
         ListGroup(stringResource(R.string.sync_title), footer = stringResource(R.string.sync_footer)) {

@@ -56,6 +56,7 @@ import com.ghwidget.app.ui.theme.AppTheme
 import com.ghwidget.app.widget.ContributionWidgetProvider
 import com.ghwidget.app.widget.WidgetUpdater
 import com.ghwidget.app.work.Refresh
+import com.ghwidget.app.work.Sync
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -118,20 +119,26 @@ private fun MainRoute(activity: ComponentActivity) {
     val appLanguage = remember { appLanguage(ctx) }
     var resumedAt by remember { mutableStateOf(System.currentTimeMillis()) }
 
+    // 저장된 상태를 다시 읽는다 (새 데이터, 오류, 토큰 만료로 로그아웃됐을 수도 있음)
+    fun reloadFromStore() {
+        data = store.cachedData()
+        error = store.lastError
+        login = store.login
+        signedIn = store.accessToken != null
+        avatar = loadAvatar(store)
+        signOutNotice = store.signOutNotice
+    }
+
     val workInfos by remember { WorkManager.getInstance(ctx).getWorkInfosForUniqueWorkFlow(Refresh.NOW) }
         .collectAsState(initial = emptyList())
     val refreshing = workInfos.any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }
     LaunchedEffect(refreshing) {
-        if (!refreshing) {
-            // 작업이 끝나면 저장된 상태를 다시 읽는다 (토큰 만료로 로그아웃됐을 수도 있음)
-            data = store.cachedData()
-            error = store.lastError
-            login = store.login
-            signedIn = store.accessToken != null
-            avatar = loadAvatar(store)
-            signOutNotice = store.signOutNotice
-        }
+        if (!refreshing) reloadFromStore()
     }
+    // 주기 동기화·잔디 알림 확인처럼 화면 밖에서 실행된 동기화가 끝나도 바로 반영한다
+    // (예: 휴대폰을 켜자마자 밀린 주기 동기화가 돌았는데, 그 직전에 앱을 연 경우)
+    val syncFinished by Sync.finished.collectAsState()
+    LaunchedEffect(syncFinished) { reloadFromStore() }
 
     fun cancelLogin() {
         store.pendingLogin = null
@@ -300,7 +307,8 @@ private fun MainRoute(activity: ComponentActivity) {
             Reminders.schedule(ctx)
             reminderNextAt = store.reminderNextAt
             // 앱을 열기만 해서는 동기화하지 않는다 (주기 동기화·당겨서 새로고침·위젯 누름으로만).
-            // 대신 "마지막 동기화 N분 전" 표시는 지금 시각으로 다시 계산한다
+            // 대신 앱이 뒤에 있는 동안 저장된 결과를 다시 읽고, "마지막 동기화 N분 전" 표시도 지금 시각으로 다시 계산한다
+            reloadFromStore()
             resumedAt = System.currentTimeMillis()
         }
         lifecycleOwner.lifecycle.addObserver(observer)

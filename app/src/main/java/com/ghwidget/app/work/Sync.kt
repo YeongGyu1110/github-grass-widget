@@ -11,6 +11,9 @@ import com.ghwidget.app.data.friendlyError
 import com.ghwidget.app.data.isNetworkError
 import com.ghwidget.app.reminder.Reminders
 import com.ghwidget.app.widget.WidgetUpdater
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import java.io.IOException
 
 /**
@@ -28,8 +31,52 @@ object Sync {
         data object NotSignedIn : Outcome
     }
 
-    /** willRetry: 실패하면 호출한 쪽이 다시 시도할지 (기록용) */
-    fun run(context: Context, reason: String, attempt: Int = 0, willRetry: Boolean = false): Outcome {
+    private val finishedCount = MutableStateFlow(0)
+
+    /**
+     * 동기화가 끝날 때마다(성공·실패·로그아웃) 1씩 늘어난다.
+     * 주기 동기화·잔디 알림 확인처럼 화면 밖에서 실행된 동기화도 열려 있는 화면이 결과를 다시 읽을 수 있게 하는 신호
+     * (작업은 앱과 같은 프로세스에서 실행된다)
+     */
+    val finished: StateFlow<Int> = finishedCount
+
+    private val lock = Any()
+    private var lastOutcome: Outcome? = null
+
+    /**
+     * willRetry: 실패하면 호출한 쪽이 다시 시도할지 (기록용).
+     * 한 번에 하나만 실행한다 (exclusive).
+     */
+    fun run(context: Context, reason: String, attempt: Int = 0, willRetry: Boolean = false): Outcome =
+        exclusive(onReuse = { DiagLog.log(context, "동기화 건너뜀: $reason (방금 끝난 동기화 결과 사용)") }) {
+            runOnce(context, reason, attempt, willRetry)
+        }
+
+    /**
+     * 동기화를 한 번에 하나만 실행한다. 이미 돌고 있으면 끝날 때까지 기다렸다가, 새로 요청하지 않고 그 결과를 쓴다.
+     * 예: 화면이 꺼진 직후 시스템이 작업을 중단시키면 WorkManager 가 곧바로 다시 실행하는데,
+     * 처음 실행은 이미 네트워크 요청 중이라 멈추지 않고 끝까지 진행된다. 이때 같은 요청이 두 번 나가지 않게 한다
+     */
+    internal fun exclusive(onReuse: () -> Unit, block: () -> Outcome): Outcome {
+        val seenBefore = finishedCount.value
+        synchronized(lock) {
+            // 기다리는 동안 다른 동기화가 끝났으면 그 결과가 방금 받은 최신 데이터다
+            if (finishedCount.value != seenBefore) {
+                lastOutcome?.let {
+                    onReuse()
+                    return it
+                }
+            }
+            val outcome = block()
+            if (outcome != Outcome.NotSignedIn) {
+                lastOutcome = outcome
+                finishedCount.update { it + 1 }
+            }
+            return outcome
+        }
+    }
+
+    private fun runOnce(context: Context, reason: String, attempt: Int, willRetry: Boolean): Outcome {
         val ctx = context.applicationContext
         val store = Store(ctx)
         if (store.accessToken == null) {

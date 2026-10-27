@@ -22,6 +22,7 @@ class DiagLogTest {
             "동기화 실패: GitHub가 로그인 토큰을 거부했습니다 [FetchException: 401] → 재시도 안 함",
             "새로고침 요청: 앱 열기 (데이터 오래됨/지난 실패)",
             "네트워크 오류 UnknownHostException → 3초 뒤 한 번 더 (네트워크: Wi-Fi)",
+            "동기화 건너뜀: 주기 갱신 (방금 끝난 동기화 결과 사용)",
         )
         assertKind(
             Kind.AUTH,

@@ -82,7 +82,7 @@ class HomeScreenshotTest {
         data = null,
         error = null,
         refreshing = false,
-        versionName = "v1.8.1",
+        versionName = "v1.8.2",
         languageSupported = true,
     )
 

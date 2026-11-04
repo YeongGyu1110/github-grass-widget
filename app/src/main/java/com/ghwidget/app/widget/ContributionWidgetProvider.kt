@@ -21,7 +21,7 @@ class ContributionWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == ACTION_REFRESH) {
             Toast.makeText(context, R.string.widget_refreshing_toast, Toast.LENGTH_SHORT).show()
-            Refresh.now(context, "위젯 그래프 누름")
+            Refresh.now(context, "위젯 그래프 누름", showResult = true)
             return
         }
         if (intent.action == Intent.ACTION_LOCALE_CHANGED) {

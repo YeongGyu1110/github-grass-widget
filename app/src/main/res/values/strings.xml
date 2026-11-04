@@ -228,6 +228,9 @@
 
     <!-- 홈 화면 위젯 -->
     <string name="widget_refreshing_toast">Refreshing GitHub contributions…</string>
+    <string name="widget_refreshed_toast">GitHub contributions updated</string>
+    <string name="widget_up_to_date_toast">Already up to date</string>
+    <string name="widget_refresh_failed_toast">Couldn\'t refresh: %1$s</string>
     <string name="widget_sign_in_again">Sign in again. Open the app.</string>
     <string name="widget_sign_in">Open the app to sign in to GitHub</string>
     <plurals name="widget_header_long">

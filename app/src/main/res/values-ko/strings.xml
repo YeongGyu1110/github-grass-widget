@@ -110,6 +110,7 @@
     <string name="settings_group_app">앱</string>
     <string name="appearance_language_title">화면 및 언어</string>
     <string name="appearance_summary">%1$s 테마 · %2$s</string>
+    <string name="appearance_summary_color">%1$s 테마 · %2$s · %3$s</string>
     <string name="summary_off">꺼짐</string>
     <string name="reminder_summary_30">%1$s부터 30분마다</string>
     <string name="reminder_summary_60">%1$s부터 1시간마다</string>
@@ -122,6 +123,9 @@
     <string name="appearance_title">화면</string>
     <string name="appearance_footer">이 앱의 테마입니다. 홈 화면 위젯의 테마는 위젯 탭에서 따로 정합니다.</string>
     <string name="app_theme">앱 테마</string>
+    <string name="dashboard_color">대시보드 색상</string>
+    <string name="dashboard_color_widget">위젯 색상</string>
+    <string name="dashboard_color_desc">대시보드의 잔디 그래프와 월별·요일별 차트에 쓰는 색입니다. \'위젯 색상\'은 위젯 탭에서 고른 색을 따릅니다.</string>
     <string name="sync_title">동기화</string>
     <string name="sync_footer">배터리가 부족하면 자동 새로고침을 건너뛰고, 그래프가 바뀌지 않으면 위젯을 다시 그리지 않습니다.</string>
     <string name="refresh_interval">자동 새로고침 간격</string>

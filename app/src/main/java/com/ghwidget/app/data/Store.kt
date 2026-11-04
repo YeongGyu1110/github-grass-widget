@@ -23,13 +23,18 @@ data class Settings(
     val refreshHours: Int = 3,
     /** 이 앱 화면의 테마 (위젯 테마와 별개) */
     val appTheme: ThemeMode = ThemeMode.SYSTEM,
+    /** 대시보드(잔디 그래프·차트) 색상. null 이면 위젯 색상(palette)을 따른다 */
+    val dashboardPalette: PaletteId? = null,
     /** 늦은 시간까지 오늘 기여가 없으면 알림 */
     val reminderEnabled: Boolean = false,
     /** 첫 알림 시각 (시) */
     val reminderStartHour: Int = 21,
     /** 알림 간격 (분): 30 또는 60 */
     val reminderIntervalMin: Int = 60,
-)
+) {
+    /** 대시보드에 실제로 쓰는 색상 */
+    val dashboardColors: PaletteId get() = dashboardPalette ?: palette
+}
 
 /** 설정·로그인 정보(SharedPreferences) + 마지막으로 받아온 데이터 캐시(파일) */
 class Store(context: Context) {
@@ -52,6 +57,7 @@ class Store(context: Context) {
         showMonths = prefs.getBoolean("showMonths", true),
         refreshHours = prefs.getInt("refreshHours", 3),
         appTheme = enumOr(prefs.getString("appTheme", null), ThemeMode.SYSTEM),
+        dashboardPalette = prefs.getString("dashboardPalette", null)?.let { name -> PaletteId.entries.find { it.name == name } },
         reminderEnabled = prefs.getBoolean("reminderEnabled", false),
         reminderStartHour = prefs.getInt("reminderStartHour", 21),
         reminderIntervalMin = prefs.getInt("reminderIntervalMin", 60),
@@ -65,6 +71,7 @@ class Store(context: Context) {
         putBoolean("showMonths", s.showMonths)
         putInt("refreshHours", s.refreshHours)
         putString("appTheme", s.appTheme.name)
+        putString("dashboardPalette", s.dashboardPalette?.name)
         putBoolean("reminderEnabled", s.reminderEnabled)
         putInt("reminderStartHour", s.reminderStartHour)
         putInt("reminderIntervalMin", s.reminderIntervalMin)

@@ -94,7 +94,8 @@ fun DashboardTab(state: HomeState, actions: HomeActions) {
 private fun Dashboard(data: ContributionData, state: HomeState) {
     val c = AppTheme.colors
     val nf = remember { NumberFormat.getIntegerInstance() }
-    val levels = Palette.of(state.settings.palette, dark = c.isDark).levels
+    // 잔디 그래프와 월별·요일별 차트가 같은 색을 쓴다 (설정 → 화면 및 언어 → 대시보드 색상)
+    val levels = Palette.of(state.settings.dashboardColors, dark = c.isDark).levels
     val insights = remember(data) { data.insights() }
     var selected by rememberSaveable(data.fetchedAt) { mutableStateOf<String?>(null) }
     val selectedDay = selected?.let { data.byDate[LocalDate.parse(it)] }

@@ -1,16 +1,10 @@
 package com.ghwidget.app.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,8 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -45,8 +37,6 @@ import com.ghwidget.app.ui.components.ListRow
 import com.ghwidget.app.ui.components.PageHeader
 import com.ghwidget.app.ui.components.SegmentedControl
 import com.ghwidget.app.ui.theme.AppTheme
-import com.ghwidget.app.ui.theme.Radius
-import com.ghwidget.app.widget.Palette
 
 @Composable
 fun WidgetTab(state: HomeState, actions: HomeActions) {
@@ -88,7 +78,10 @@ fun WidgetTab(state: HomeState, actions: HomeActions) {
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FieldLabel(stringResource(R.string.field_color))
-                PalettePicker(settings.palette) { update(settings.copy(palette = it)) }
+                PalettePicker(
+                    PaletteId.entries.map { stringResource(it.label) to it },
+                    PaletteId.entries.indexOf(settings.palette),
+                ) { update(settings.copy(palette = PaletteId.entries[it])) }
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 // 드래그 중에는 화면에서만 바꾸고, 손을 떼면 저장·위젯 반영
@@ -139,34 +132,5 @@ private fun DisplayGroup(settings: Settings, update: (Settings) -> Unit) {
         ListRow(stringResource(R.string.display_months), description = stringResource(R.string.display_months_desc), trailing = {
             AppSwitch(settings.showMonths) { update(settings.copy(showMonths = it)) }
         })
-    }
-}
-
-/** 각 색상의 4단계를 작은 칸으로 보여주는 선택지 */
-@Composable
-private fun PalettePicker(selected: PaletteId, onSelect: (PaletteId) -> Unit) {
-    val c = AppTheme.colors
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        PaletteId.entries.forEach { p ->
-            val isSelected = p == selected
-            val levels = Palette.of(p, dark = c.isDark).levels
-            Column(
-                Modifier
-                    .weight(1f)
-                    .clip(Radius.control)
-                    .border(if (isSelected) 2.dp else 1.dp, if (isSelected) c.primary else c.border, Radius.control)
-                    .clickable { onSelect(p) }
-                    .padding(vertical = 10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    for (lv in 1..4) {
-                        Box(Modifier.size(9.dp).clip(RoundedCornerShape(2.dp)).background(Color(levels[lv])))
-                    }
-                }
-                Text(stringResource(p.label), style = MaterialTheme.typography.labelMedium, color = if (isSelected) c.foreground else c.mutedForeground)
-            }
-        }
     }
 }

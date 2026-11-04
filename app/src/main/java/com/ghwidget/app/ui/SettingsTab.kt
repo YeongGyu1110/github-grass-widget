@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ghwidget.app.data.DiagLog
+import com.ghwidget.app.data.PaletteId
 import com.ghwidget.app.data.ThemeMode
 import com.ghwidget.app.R
 import com.ghwidget.app.reminder.Reminders
@@ -59,6 +60,9 @@ import java.time.format.DateTimeFormatter
 import java.time.LocalTime
 
 private val REFRESH_HOURS = listOf(1, 3, 6, 12, 24)
+
+/** 대시보드 색상으로 고를 수 있는 색 (기본은 위젯 색상을 따름) */
+private val DASHBOARD_PALETTES = listOf(PaletteId.BLUE, PaletteId.PURPLE, PaletteId.ORANGE)
 
 /** 설정은 2단: 첫 화면은 항목 목록과 현재 값 요약, 누르면 세부 화면 (계정은 항목이 적어 첫 화면에 그대로) */
 private enum class SettingsPage { HOME, APPEARANCE, REMINDER, SYNC, DIAGNOSTICS }
@@ -184,7 +188,10 @@ private fun SettingsHome(state: HomeState, actions: HomeActions, open: (Settings
     }
 }
 
-/** "시스템 테마 · 한국어": 언어는 '시스템'이어도 실제로 쓰고 있는 언어 이름으로 보여준다 */
+/**
+ * "시스템 테마 · 한국어": 언어는 '시스템'이어도 실제로 쓰고 있는 언어 이름으로 보여준다.
+ * 대시보드 색상을 따로 골랐으면 "시스템 테마 · 블루 · 한국어"
+ */
 @Composable
 private fun appearanceSummary(state: HomeState): String {
     val theme = stringResource(
@@ -198,7 +205,8 @@ private fun appearanceSummary(state: HomeState): String {
         "ko" -> stringResource(R.string.lang_korean)
         else -> stringResource(R.string.lang_english)
     }
-    return stringResource(R.string.appearance_summary, theme, language)
+    val color = state.settings.dashboardPalette ?: return stringResource(R.string.appearance_summary, theme, language)
+    return stringResource(R.string.appearance_summary_color, theme, stringResource(color.label), language)
 }
 
 /** 프로필 사진, 계정 이름, 연결 상태 */
@@ -245,6 +253,19 @@ private fun AppearanceContent(state: HomeState, actions: HomeActions) {
                 themes.indexOf(state.settings.appTheme),
                 { actions.onSettingsChange(state.settings.copy(appTheme = themes[it])) },
             )
+        }
+        AppDivider()
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.dashboard_color), style = MaterialTheme.typography.titleSmall, color = c.foreground)
+            // 첫 선택지는 위젯 색상을 따르는 기본값 (미리보기도 지금 위젯 색상)
+            val s = state.settings
+            PalettePicker(
+                listOf(stringResource(R.string.dashboard_color_widget) to s.palette) +
+                    DASHBOARD_PALETTES.map { stringResource(it.label) to it },
+                if (s.dashboardPalette == null) 0 else DASHBOARD_PALETTES.indexOf(s.dashboardPalette) + 1,
+                { actions.onSettingsChange(s.copy(dashboardPalette = if (it == 0) null else DASHBOARD_PALETTES[it - 1])) },
+            )
+            Text(stringResource(R.string.dashboard_color_desc), style = MaterialTheme.typography.bodySmall, color = c.mutedForeground)
         }
     }
 

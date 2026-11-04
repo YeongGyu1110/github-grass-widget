@@ -6,6 +6,7 @@ import androidx.annotation.PluralsRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
@@ -153,6 +154,35 @@ fun WidgetStage(
                         .clip(RoundedCornerShape(9.dp))
                         .background(if (c.isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)),
                 )
+            }
+        }
+    }
+}
+
+/** 색상 선택지: 이름과 그 색의 4단계를 작은 칸으로 보여준다 (위젯 색상·대시보드 색상) */
+@Composable
+fun PalettePicker(options: List<Pair<String, PaletteId>>, selectedIndex: Int, onSelect: (Int) -> Unit) {
+    val c = AppTheme.colors
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.forEachIndexed { i, (label, p) ->
+            val isSelected = i == selectedIndex
+            val levels = Palette.of(p, dark = c.isDark).levels
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clip(Radius.control)
+                    .border(if (isSelected) 2.dp else 1.dp, if (isSelected) c.primary else c.border, Radius.control)
+                    .clickable { onSelect(i) }
+                    .padding(vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    for (lv in 1..4) {
+                        Box(Modifier.size(9.dp).clip(RoundedCornerShape(2.dp)).background(Color(levels[lv])))
+                    }
+                }
+                Text(label, style = MaterialTheme.typography.labelMedium, color = if (isSelected) c.foreground else c.mutedForeground, maxLines = 1)
             }
         }
     }

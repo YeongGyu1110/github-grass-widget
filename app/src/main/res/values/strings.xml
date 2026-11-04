@@ -122,6 +122,7 @@
     <string name="settings_group_app">App</string>
     <string name="appearance_language_title">Appearance &amp; language</string>
     <string name="appearance_summary">%1$s theme · %2$s</string>
+    <string name="appearance_summary_color">%1$s theme · %2$s · %3$s</string>
     <string name="summary_off">Off</string>
     <string name="reminder_summary_30">From %1$s, every 30 min</string>
     <string name="reminder_summary_60">From %1$s, every hour</string>
@@ -134,6 +135,9 @@
     <string name="appearance_title">Appearance</string>
     <string name="appearance_footer">This is the theme for this app. Set the home screen widget\'s theme separately in the Widget tab.</string>
     <string name="app_theme">App theme</string>
+    <string name="dashboard_color">Dashboard color</string>
+    <string name="dashboard_color_widget">Widget</string>
+    <string name="dashboard_color_desc">Used for the dashboard\'s contribution graph and monthly and weekday charts. \'Widget\' follows the color picked in the Widget tab.</string>
     <string name="sync_title">Sync</string>
     <string name="sync_footer">Auto-refresh is skipped when the battery is low, and the widget is redrawn only when the graph changes.</string>
     <string name="refresh_interval">Auto-refresh interval</string>
